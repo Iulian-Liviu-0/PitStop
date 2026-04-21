@@ -1,0 +1,12 @@
+﻿@page "/auth/register"
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+
+<PageTitle>Înregistrare - PitStop</PageTitle>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Nav.NavigateTo("/auth/login?tab=register", replace: true);
+    }
+}

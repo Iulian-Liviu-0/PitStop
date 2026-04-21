@@ -1,0 +1,495 @@
+@page "/serviciu/{Id:int}"
+@rendermode InteractiveServer
+@inject IShopRepository ShopRepo
+@inject NavigationManager Nav
+
+<PageTitle>@(Shop?.Name ?? "PitStop") - PitStop</PageTitle>
+
+@if (Shop is null)
+{
+    <div class="min-h-screen bg-surface flex items-center justify-center pt-20">
+        <p class="text-text-muted">Se încarcă...</p>
+    </div>
+}
+else
+{
+<div class="bg-surface-bright min-h-screen">
+
+    <!-- ─── HERO BANNER ─── -->
+    <section class="relative w-full overflow-hidden" style="height: 350px;">
+        <img src="@Shop.CoverImage" alt="@Shop.Name"
+             class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+
+        <!-- Butoane top-right -->
+        <div class="absolute top-6 right-6 flex gap-3 z-10">
+            <button class="flex items-center gap-2 px-4 py-2 border border-white text-white rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md text-sm font-semibold">
+                <span class="material-symbols-outlined text-xl">favorite</span>
+                Salvează la favorite
+            </button>
+            <button class="flex items-center gap-2 px-4 py-2 border border-white text-white rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md text-sm font-semibold">
+                <span class="material-symbols-outlined text-xl">share</span>
+                Distribuie
+            </button>
+        </div>
+
+        <!-- Info overlay bottom-left -->
+        <div class="absolute bottom-10 left-0 w-full z-10">
+            <div class="max-w-7xl mx-auto px-6">
+                <span class="inline-block bg-brand-red text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+                    @Shop.Category
+                </span>
+                <h1 class="font-black text-5xl text-white tracking-tighter mb-4" style="font-family: Manrope, sans-serif;">
+                    @Shop.Name
+                </h1>
+                <div class="flex flex-wrap items-center gap-6 text-white/90">
+                    <div class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-brand-red text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+                        <span class="font-bold">@Shop.Rating</span>
+                        <span class="text-sm opacity-80">(@Shop.ReviewCount recenzii)</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-lg">location_on</span>
+                        <span class="text-sm">@Shop.City</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        @if (Shop.IsOpen)
+                        {
+                            <span class="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold uppercase">Deschis acum</span>
+                            @if (!string.IsNullOrEmpty(Shop.ClosingTime))
+                            {
+                                <span class="text-sm opacity-80">Închide la @Shop.ClosingTime</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="bg-red-700 text-white px-2 py-0.5 rounded text-xs font-bold uppercase">Închis</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── MAIN CONTENT ─── -->
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <div class="flex flex-col lg:flex-row gap-8">
+
+            <!-- ─── COLOANA STÂNGA ─── -->
+            <div class="lg:w-2/3 space-y-8">
+
+                <!-- Despre noi -->
+                <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
+                    <h2 class="font-bold text-2xl text-text-main mb-4" style="font-family: Manrope, sans-serif;">Despre noi</h2>
+                    <p class="text-text-muted leading-relaxed mb-6">@Shop.Description</p>
+                    @if (Shop.Brands.Count > 0)
+                    {
+                        <div class="flex flex-wrap gap-2">
+                            @foreach (var brand in Shop.Brands)
+                            {
+                                <span class="bg-secondary-light text-secondary px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide">
+                                    @brand
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Servicii oferite -->
+                @if (Shop.Services.Count > 0)
+                {
+                    <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
+                        <h2 class="font-bold text-2xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Servicii oferite</h2>
+                        <div class="space-y-3">
+                            @foreach (var service in Shop.Services)
+                            {
+                                <div class="flex items-center justify-between p-4 bg-surface-low rounded-lg hover:bg-surface-container transition-colors border border-border-light">
+                                    <div class="flex-1 mr-4">
+                                        <h4 class="font-bold text-text-main">@service.Name</h4>
+                                        <p class="text-sm text-text-muted">@service.Description</p>
+                                    </div>
+                                    <span class="bg-brand-red text-white px-3 py-1 rounded font-bold text-sm whitespace-nowrap">
+                                        @service.PriceRange
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Galerie foto -->
+                @if (Shop.Photos.Count > 0)
+                {
+                    <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="font-bold text-2xl text-text-main" style="font-family: Manrope, sans-serif;">Galerie foto</h2>
+                            <button class="text-brand-red font-bold text-sm hover:underline">Vezi tot</button>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            @foreach (var photo in Shop.Photos)
+                            {
+                                <img src="@photo" alt="Foto service"
+                                     class="w-full h-40 object-cover rounded-lg shadow-sm hover:opacity-90 transition-opacity cursor-pointer" />
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Recenzii -->
+                <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
+                    <h2 class="font-bold text-2xl text-text-main mb-8" style="font-family: Manrope, sans-serif;">Recenzii clienți</h2>
+
+                    <!-- Rating summary -->
+                    <div class="flex flex-col md:flex-row gap-12 mb-10 items-center">
+                        <div class="text-center shrink-0">
+                            <div class="text-6xl font-black text-text-main leading-none mb-2" style="font-family: Manrope, sans-serif;">@Shop.Rating</div>
+                            <div class="flex justify-center mb-1">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span class="material-symbols-outlined text-brand-red" style="font-variation-settings: 'FILL' 1;">star</span>
+                                }
+                            </div>
+                            <div class="text-sm text-text-muted font-medium">@Shop.ReviewCount recenzii</div>
+                        </div>
+                        <div class="flex-1 w-full space-y-3">
+                            @foreach (var bar in RatingBars)
+                            {
+                                <div class="flex items-center gap-4">
+                                    <span class="text-sm font-bold w-4 text-text-main">@bar.Stars</span>
+                                    <div class="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
+                                        <div class="h-full bg-brand-red rounded-full transition-all duration-500"
+                                             style="width: @(bar.Percentage)%"></div>
+                                    </div>
+                                    <span class="text-sm text-text-muted w-10 text-right">@(bar.Percentage)%</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Review cards -->
+                    @if (Shop.Reviews.Count > 0)
+                    {
+                        <div class="space-y-6 mb-8">
+                            @foreach (var review in Shop.Reviews)
+                            {
+                                <div class="bg-surface-bright p-6 rounded-lg border border-border-light">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex gap-4 items-center">
+                                            <div class="w-12 h-12 rounded-full bg-brand-red-faint flex items-center justify-center font-bold text-brand-red text-sm shrink-0">
+                                                @review.Initials
+                                            </div>
+                                            <div>
+                                                <h5 class="font-bold text-text-main">@review.Author</h5>
+                                                <p class="text-xs text-text-muted">@review.Date</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex shrink-0">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                var starVal = i;
+                                                <span class="material-symbols-outlined text-brand-red text-sm"
+                                                      style="font-variation-settings: 'FILL' @(starVal <= review.Rating ? "1" : "0");">star</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <p class="text-text-muted text-sm mb-4">@review.Text</p>
+                                    <button class="flex items-center gap-2 text-sm text-text-muted hover:text-brand-red transition-colors">
+                                        <span class="material-symbols-outlined text-lg">thumb_up</span>
+                                        <span>Util (@review.UsefulCount)</span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <button class="w-full py-4 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-all active:scale-[0.98]"
+                            style="font-family: Manrope, sans-serif;">
+                        Scrie o recenzie
+                    </button>
+                </div>
+            </div>
+
+            <!-- ─── COLOANA DREAPTA (sticky) ─── -->
+            <div class="lg:w-1/3">
+                <div class="sticky top-24 space-y-6">
+
+                    <!-- Contact card -->
+                    <div class="bg-white rounded-xl p-6 shadow-md border border-border-light">
+                        <button class="w-full py-4 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-all mb-6 flex items-center justify-center gap-2"
+                                style="font-family: Manrope, sans-serif;">
+                            <span class="material-symbols-outlined">call</span>
+                            Contactează acum
+                        </button>
+                        <div class="space-y-4">
+                            <div class="flex items-start gap-4">
+                                <span class="material-symbols-outlined text-brand-red shrink-0">phone</span>
+                                <div>
+                                    <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Telefon</p>
+                                    <p class="text-text-main font-semibold">@Shop.Phone</p>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Shop.Email))
+                            {
+                                <div class="flex items-start gap-4">
+                                    <span class="material-symbols-outlined text-brand-red shrink-0">mail</span>
+                                    <div>
+                                        <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Email</p>
+                                        <p class="text-text-main font-semibold">@Shop.Email</p>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Shop.Website))
+                            {
+                                <div class="flex items-start gap-4">
+                                    <span class="material-symbols-outlined text-brand-red shrink-0">language</span>
+                                    <div>
+                                        <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Website</p>
+                                        <a href="https://@Shop.Website" target="_blank"
+                                           class="text-brand-red font-semibold hover:underline">@Shop.Website</a>
+                                    </div>
+                                </div>
+                            }
+                            <div class="flex items-start gap-4">
+                                <span class="material-symbols-outlined text-brand-red shrink-0">location_on</span>
+                                <div>
+                                    <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Adresă</p>
+                                    <p class="text-text-main font-semibold leading-tight">@Shop.Address</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Program card -->
+                    @if (Shop.Hours.Count > 0)
+                    {
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-border-light">
+                            <h3 class="font-bold text-lg text-text-main mb-4 flex items-center gap-2"
+                                style="font-family: Manrope, sans-serif;">
+                                <span class="material-symbols-outlined text-text-muted">schedule</span>
+                                Program de funcționare
+                            </h3>
+                            <div class="space-y-3">
+                                @foreach (var day in Shop.Hours)
+                                {
+                                    <div class="flex justify-between items-center text-sm @(day.IsToday ? "px-2 py-2 bg-brand-red/5 rounded-lg border-l-4 border-brand-red" : "py-1")">
+                                        <span class="@(day.IsToday ? "text-brand-red font-bold" : "text-text-muted")">
+                                            @day.DayName @(day.IsToday ? "(Astăzi)" : "")
+                                        </span>
+                                        <span class="@(day.IsToday ? "text-brand-red font-bold" : day.IsClosed ? "text-red-500 font-bold" : "font-semibold text-text-main")">
+                                            @(day.IsClosed ? "Închis" : $"{day.Open} - {day.Close}")
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Locatie card -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-border-light">
+                        <h3 class="font-bold text-lg text-text-main mb-4" style="font-family: Manrope, sans-serif;">Locație</h3>
+                        <div class="relative w-full h-[220px] bg-surface-container rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-border-light">
+                            <div class="text-center">
+                                <span class="material-symbols-outlined text-6xl text-brand-red"
+                                      style="font-variation-settings: 'FILL' 1;">location_on</span>
+                                <p class="text-sm text-text-muted mt-2 px-4">@Shop.Address</p>
+                            </div>
+                        </div>
+                        <a href="https://maps.google.com/?q=@Uri.EscapeDataString(Shop.Address)"
+                           target="_blank"
+                           class="flex items-center justify-center gap-2 text-brand-blue font-bold text-sm hover:underline">
+                            <span class="material-symbols-outlined text-lg">open_in_new</span>
+                            Deschide în Google Maps
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── SERVICII SIMILARE ─── -->
+        @if (SimilarShops.Count > 0)
+        {
+            <section class="mt-16">
+                <h2 class="font-extrabold text-3xl text-text-main mb-8 tracking-tight"
+                    style="font-family: Manrope, sans-serif;">
+                    Servicii similare în @Shop.City
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    @foreach (var similar in SimilarShops)
+                    {
+                        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group border border-border-light">
+                            <div class="relative h-48 overflow-hidden bg-surface-container">
+                                <img src="@similar.ImageUrl" alt="@similar.Name"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase text-text-main">
+                                    @similar.Sector
+                                </div>
+                            </div>
+                            <div class="p-5">
+                                <h3 class="font-bold text-lg text-text-main mb-2" style="font-family: Manrope, sans-serif;">@similar.Name</h3>
+                                <div class="flex items-center gap-1 mb-3">
+                                    <span class="material-symbols-outlined text-brand-red text-sm"
+                                          style="font-variation-settings: 'FILL' 1;">star</span>
+                                    <span class="font-bold text-sm">@similar.Rating</span>
+                                    <span class="text-xs text-text-muted">(@similar.ReviewCount recenzii)</span>
+                                </div>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    @foreach (var tag in similar.Tags)
+                                    {
+                                        <span class="bg-surface-container text-secondary px-2 py-0.5 rounded text-[10px] font-bold">@tag</span>
+                                    }
+                                </div>
+                                <a href="/serviciu/@similar.Id"
+                                   class="block w-full py-2 border border-brand-red text-brand-red font-bold rounded hover:bg-brand-red hover:text-white transition-colors text-sm text-center">
+                                    Vezi profil
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+</div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private record ServiceItem(string Name, string Description, string PriceRange);
+    private record ReviewItem(string Author, string Initials, int Rating, string Date, string Text, int UsefulCount);
+    private record HourItem(string DayName, string Open, string Close, bool IsClosed, bool IsToday);
+    private record RatingBar(int Stars, int Percentage);
+    private record SimilarShop(int Id, string Name, string Sector, double Rating, int ReviewCount, string ImageUrl, List<string> Tags);
+
+    private record ShopData(
+        string Name, string Category, string City, string Address,
+        string Phone, string Email, string Website,
+        double Rating, int ReviewCount, bool IsOpen, string ClosingTime,
+        string CoverImage, string Description,
+        List<string> Brands, List<ServiceItem> Services,
+        List<string> Photos, List<ReviewItem> Reviews,
+        List<HourItem> Hours
+    );
+
+    private ShopData? Shop;
+    private List<RatingBar> RatingBars = [];
+    private List<SimilarShop> SimilarShops = [];
+    private int _loadedId;
+
+    private static readonly string[] DayNames = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id == _loadedId) return;
+        _loadedId = Id;
+        await LoadShop();
+    }
+
+    private async Task LoadShop()
+    {
+        Shop = null;
+        var shop = await ShopRepo.GetByIdAsync(Id);
+        if (shop is null) { Nav.NavigateTo("/not-found"); return; }
+
+        var today = ((int)DateTime.UtcNow.DayOfWeek + 6) % 7;
+        var (isOpen, closingTime) = GetOpenStatus(shop.Hours, today);
+
+        Shop = new ShopData(
+            Name: shop.Name,
+            Category: CategoryDisplayName(shop.Category),
+            City: shop.City,
+            Address: shop.Address,
+            Phone: shop.Phone,
+            Email: shop.Email,
+            Website: shop.Website ?? string.Empty,
+            Rating: Math.Round(shop.AverageRating, 1),
+            ReviewCount: shop.ReviewCount,
+            IsOpen: isOpen,
+            ClosingTime: closingTime,
+            CoverImage: shop.CoverImage ?? shop.Photos.FirstOrDefault()?.Url ?? string.Empty,
+            Description: shop.Description,
+            Brands: shop.Brands.Select(b => b.Name).ToList(),
+            Services: shop.Services.Select(s => new ServiceItem(
+                s.Name, s.Description, FormatPrice(s.PriceMin, s.PriceMax))).ToList(),
+            Photos: shop.Photos.Select(p => p.Url).ToList(),
+            Reviews: shop.Reviews.Select(r => new ReviewItem(
+                r.UserName, r.UserInitials, r.Rating, FormatDate(r.CreatedAt), r.Text, r.UsefulCount)).ToList(),
+            Hours: shop.Hours.OrderBy(h => h.DayOfWeek).Select(h => new HourItem(
+                DayNames[h.DayOfWeek],
+                h.OpenTime?.ToString("HH:mm") ?? string.Empty,
+                h.CloseTime?.ToString("HH:mm") ?? string.Empty,
+                h.IsClosed,
+                h.DayOfWeek == today)).ToList()
+        );
+
+        RatingBars = BuildRatingBars(shop.Reviews);
+
+        var (similar, _) = await ShopRepo.SearchAsync(string.Empty, string.Empty, shop.Category, null, null, 1, 4);
+        SimilarShops = similar
+            .Where(s => s.Id != Id)
+            .Take(3)
+            .Select(s => new SimilarShop(
+                s.Id, s.Name, s.Sector ?? s.City,
+                Math.Round(s.AverageRating, 1), s.ReviewCount,
+                s.Photos.FirstOrDefault()?.Url ?? string.Empty,
+                [CategoryDisplayName(s.Category)]))
+            .ToList();
+    }
+
+    private static (bool IsOpen, string ClosingTime) GetOpenStatus(ICollection<ShopHour> hours, int today)
+    {
+        var now = TimeOnly.FromDateTime(DateTime.UtcNow);
+        var h = hours.FirstOrDefault(h => h.DayOfWeek == today);
+        if (h is null || h.IsClosed || h.OpenTime is null || h.CloseTime is null) return (false, string.Empty);
+        return (h.OpenTime <= now && now <= h.CloseTime, h.CloseTime.Value.ToString("HH:mm"));
+    }
+
+    private static List<RatingBar> BuildRatingBars(ICollection<Review> reviews)
+    {
+        var total = reviews.Count;
+        if (total == 0) return [new(5,0), new(4,0), new(3,0), new(2,0), new(1,0)];
+        return Enumerable.Range(1, 5).Reverse()
+            .Select(s => new RatingBar(s, (int)Math.Round(reviews.Count(r => r.Rating == s) * 100.0 / total)))
+            .ToList();
+    }
+
+    private static string FormatPrice(decimal min, decimal max) =>
+        (min, max) switch
+        {
+            (0, 0) => "La cerere",
+            var (a, b) when a == b => $"{a:N0} RON",
+            _ => $"{min:N0} – {max:N0} RON"
+        };
+
+    private static string FormatDate(DateTime date)
+    {
+        var diff = DateTime.UtcNow - date;
+        return diff.TotalDays switch
+        {
+            < 1   => "Astăzi",
+            < 2   => "Ieri",
+            < 7   => $"Acum {(int)diff.TotalDays} zile",
+            < 30  => $"Acum {(int)(diff.TotalDays / 7)} săptămâni",
+            < 365 => $"Acum {(int)(diff.TotalDays / 30)} luni",
+            _     => $"Acum {(int)(diff.TotalDays / 365)} ani"
+        };
+    }
+
+    private static string CategoryDisplayName(ShopCategory cat) => cat switch
+    {
+        ShopCategory.ServiceAuto  => "Service Auto",
+        ShopCategory.PieseAuto    => "Piese Auto",
+        ShopCategory.Spalatorie   => "Spălătorie",
+        ShopCategory.Vopsitorie   => "Vopsitorie",
+        ShopCategory.Vulcanizare  => "Vulcanizare",
+        ShopCategory.Tuning       => "Tuning",
+        ShopCategory.Tractari     => "Tractări",
+        ShopCategory.Detailing    => "Detailing",
+        ShopCategory.ITP          => "ITP",
+        ShopCategory.ServiceMoto  => "Service Moto",
+        ShopCategory.PieseMoto    => "Piese Moto",
+        ShopCategory.Altele       => "Altele",
+        _                         => cat.ToString()
+    };
+}

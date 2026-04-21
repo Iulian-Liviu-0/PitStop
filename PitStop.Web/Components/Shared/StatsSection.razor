@@ -1,0 +1,53 @@
+@if (Large)
+{
+    <section class="bg-surface-container py-16 px-6 md:px-12">
+        <div class="max-w-screen-xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-border-light">
+                @foreach (var stat in AllStats)
+                {
+                    <div class="flex flex-col items-center gap-1 px-8">
+                        <span class="font-black text-4xl text-brand-red" style="font-family: Manrope, sans-serif;">@stat.Value</span>
+                        <span class="text-sm text-text-muted">@stat.Label</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <div class="flex gap-8 mt-8">
+        @for (int i = 0; i < CompactStats.Count; i++)
+        {
+            <div>
+                <p class="font-black text-2xl text-text-main" style="font-family: Manrope, sans-serif;">@CompactStats[i].Value</p>
+                <p class="text-xs text-text-muted">@CompactStats[i].Label</p>
+            </div>
+            @if (i < CompactStats.Count - 1)
+            {
+                <div class="w-px bg-border-light"></div>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool Large { get; set; }
+
+    private record StatItem(string Value, string Label);
+
+    private static readonly List<StatItem> CompactStats =
+    [
+        new("500+", "Servicii listate"),
+        new("40+", "Județe acoperite"),
+        new("4.8★", "Rating mediu"),
+    ];
+
+    private static readonly List<StatItem> AllStats =
+    [
+        new("500+", "Servicii listate"),
+        new("40+", "Județe acoperite"),
+        new("10.000+", "Utilizatori activi"),
+        new("4.8★", "Rating mediu"),
+    ];
+}

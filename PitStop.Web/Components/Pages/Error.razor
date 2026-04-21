@@ -1,0 +1,38 @@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Eroare - PitStop</PageTitle>
+
+<section class="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 py-24">
+    <span class="material-symbols-outlined text-8xl text-border-light mb-6">error</span>
+    <h1 class="font-black text-4xl text-text-main mb-3" style="font-family: Manrope, sans-serif;">
+        A apărut o eroare
+    </h1>
+    <p class="text-text-muted mb-2">Ne pare rău, ceva nu a mers bine la procesarea cererii tale.</p>
+
+    @if (ShowRequestId)
+    {
+        <p class="text-xs text-text-muted mt-2">
+            <strong>Request ID:</strong> <code class="bg-surface-container px-2 py-0.5 rounded text-xs">@RequestId</code>
+        </p>
+    }
+
+    <a href="/" class="mt-8 bg-brand-red hover:bg-brand-red-dark text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-sm">
+        Înapoi acasă
+    </a>
+</section>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [PersistentState]
+    private string? RequestId { get; set; }
+
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized()
+    {
+        RequestId ??= Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+    }
+}

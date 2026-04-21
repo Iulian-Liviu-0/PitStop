@@ -1,0 +1,209 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject IShopRepository ShopRepo
+@inject NavigationManager Nav
+
+<PageTitle>PitStop - Găsește cel mai bun service auto și moto</PageTitle>
+
+<!-- ─── HERO ─── -->
+<section class="px-6 md:px-10 py-16 md:py-24 max-w-screen-xl mx-auto flex flex-col md:flex-row items-center gap-10">
+    <div class="flex-1">
+        <div class="inline-flex items-center gap-2 bg-brand-red-light text-brand-red text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6">
+            <span class="material-symbols-outlined text-sm">verified</span>
+            Doar servicii verificate în România
+        </div>
+
+        <h1 class="font-black text-5xl md:text-6xl text-text-main leading-tight tracking-tight mb-5" style="font-family: Manrope, sans-serif;">
+            Găsește cel mai bun <span class="text-brand-red">service auto / moto</span> din România
+        </h1>
+
+        <p class="text-lg text-text-muted mb-8 max-w-xl">
+            Service auto, moto, piese, spălătorie, vopsitorie — totul într-un singur loc. Conectăm șoferii cu experții auto și moto de top.
+        </p>
+
+        <!-- Search bar -->
+        <div class="bg-white p-2 rounded-xl shadow-md flex flex-col sm:flex-row gap-2 max-w-2xl border border-border-light">
+            <div class="flex-1 flex items-center px-4 py-2 gap-3">
+                <span class="material-symbols-outlined text-text-muted">search</span>
+                <input @bind="SearchQuery"
+                       @bind:event="oninput"
+                       @onkeydown="HandleSearchKeyDown"
+                       class="w-full bg-transparent border-none focus:ring-0 text-text-main placeholder-text-muted text-sm outline-none"
+                       placeholder="Caută serviciu sau oraș..." />
+            </div>
+            <button @onclick="NavigateToSearch"
+                    class="bg-brand-red hover:bg-brand-red-dark text-white px-7 py-3 rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                    style="font-family: Manrope, sans-serif;">
+                <span>Caută</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+        </div>
+
+        <StatsSection />
+    </div>
+
+    <!-- Hero image -->
+    <div class="flex-1 w-full h-[380px] md:h-[460px] rounded-2xl overflow-hidden shadow-xl bg-gray-100">
+        <img src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80"
+             alt="Mecanic auto lucrând la o mașină"
+             class="w-full h-full object-cover object-center" />
+    </div>
+</section>
+
+<!-- ─── CATEGORIES ─── -->
+<section class="bg-white py-20 px-6 md:px-10">
+    <div class="max-w-screen-xl mx-auto">
+        <div class="mb-10">
+            <h2 class="font-extrabold text-3xl text-text-main tracking-tight mb-2" style="font-family: Manrope, sans-serif;">
+                Categorii Servicii
+            </h2>
+            <p class="text-text-muted">Alege din gama noastră completă de soluții auto și moto.</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
+            @foreach (var cat in Categories)
+            {
+                <a href="/servicii?categorie=@cat.Slug"
+                   class="group bg-surface rounded-xl p-6 flex flex-col items-center text-center gap-4 hover:-translate-y-1 transition-all duration-200 border border-transparent hover:border-brand-red-mid hover:shadow-md">
+                    <div class="w-14 h-14 rounded-full bg-brand-red-light text-brand-red flex items-center justify-center transition-all duration-200 group-hover:bg-brand-red group-hover:text-white">
+                        <span class="material-symbols-outlined text-2xl">@cat.Icon</span>
+                    </div>
+                    <span class="font-bold text-sm text-text-main group-hover:text-brand-red transition-colors" style="font-family: Manrope, sans-serif;">
+                        @cat.Name
+                    </span>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ─── FEATURED SHOPS ─── -->
+<section class="py-20 px-6 md:px-10 bg-surface">
+    <div class="max-w-screen-xl mx-auto">
+        <div class="flex justify-between items-end mb-10">
+            <div>
+                <h2 class="font-extrabold text-3xl text-text-main tracking-tight mb-2" style="font-family: Manrope, sans-serif;">
+                    Servicii recomandate
+                </h2>
+                <p class="text-text-muted">Ateliere auto și moto de top, evaluate de comunitate.</p>
+            </div>
+            <a href="/servicii" class="hidden md:inline-flex items-center gap-1 text-brand-red font-bold text-sm hover:underline" style="font-family: Manrope, sans-serif;">
+                Vezi toate
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+            @foreach (var shop in FeaturedShops)
+            {
+                <ShopCard Shop="shop" Variant="ShopCardVariant.Grid" />
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ─── HOW IT WORKS ─── -->
+<section class="py-20 px-6 md:px-10 bg-white">
+    <div class="max-w-screen-xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="font-extrabold text-3xl text-text-main tracking-tight mb-4" style="font-family: Manrope, sans-serif;">
+                Cum funcționează
+            </h2>
+            <p class="text-text-muted max-w-xl mx-auto">
+                Găsirea service-ului potrivit nu a fost niciodată mai simplă. Urmează acești 3 pași rapizi.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10 relative">
+            <div class="hidden md:block absolute top-10 left-[33%] w-[16%] h-px bg-brand-red-mid"></div>
+            <div class="hidden md:block absolute top-10 left-[58%] w-[16%] h-px bg-brand-red-mid"></div>
+
+            @foreach (var step in Steps)
+            {
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full bg-brand-red-light border-2 border-brand-red-mid flex items-center justify-center mb-4">
+                        <span class="material-symbols-outlined text-3xl text-brand-red">@step.Icon</span>
+                    </div>
+                    <div class="w-6 h-6 rounded-full bg-brand-red text-white text-xs font-black flex items-center justify-center mb-4" style="font-family: Manrope, sans-serif;">
+                        @step.Number
+                    </div>
+                    <h3 class="font-bold text-lg text-text-main mb-2" style="font-family: Manrope, sans-serif;">@step.Title</h3>
+                    <p class="text-text-muted text-sm">@step.Description</p>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<CTASection Variant="CTASection.CTAVariant.DarkHorizontal"
+            Title="Ești proprietarul unui service auto/moto, magazin de piese, vulcanizare?"
+            Subtitle="Contactează-ne și adaugă-ți afacerea pe PitStop. Ajungem la mii de șoferi și motocicliști din România."
+            ButtonText="Listează-ți afacerea →" />
+
+@code {
+    private string SearchQuery = string.Empty;
+    private List<ShopCardModel> FeaturedShops = [];
+
+    private void NavigateToSearch() =>
+        Nav.NavigateTo($"/servicii?q={Uri.EscapeDataString(SearchQuery)}");
+
+    private void HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") NavigateToSearch();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var shops = await ShopRepo.GetFeaturedAsync(6);
+        FeaturedShops = shops.Select(MapToCard).ToList();
+    }
+
+    private static ShopCardModel MapToCard(Domain.Entities.Shop s) => new(
+        Id: s.Id,
+        Name: s.Name,
+        Category: CategoryDisplayName(s.Category),
+        Location: s.City,
+        Rating: s.AverageRating,
+        Description: s.Description,
+        ImageUrl: s.Photos.FirstOrDefault()?.Url ?? "",
+        ReviewCount: s.ReviewCount
+    );
+
+    private static string CategoryDisplayName(ShopCategory cat) => cat switch
+    {
+        ShopCategory.ServiceAuto  => "Service Auto",
+        ShopCategory.PieseAuto    => "Piese Auto",
+        ShopCategory.Spalatorie   => "Spălătorie",
+        ShopCategory.Vopsitorie   => "Vopsitorie",
+        ShopCategory.Vulcanizare  => "Vulcanizare",
+        ShopCategory.Tuning       => "Tuning",
+        ShopCategory.Tractari     => "Tractări",
+        ShopCategory.Detailing    => "Detailing",
+        ShopCategory.ITP          => "ITP",
+        ShopCategory.ServiceMoto  => "Service Moto",
+        ShopCategory.PieseMoto    => "Piese Moto",
+        ShopCategory.Altele       => "Altele",
+        _                         => cat.ToString()
+    };
+
+    private record CategoryItem(string Name, string Icon, string Slug);
+    private record StepItem(int Number, string Icon, string Title, string Description);
+
+    private List<CategoryItem> Categories = new()
+    {
+        new("Service Auto", "build", "service-auto"),
+        new("Piese Auto & Moto", "settings", "piese-auto"),
+        new("Spălătorie Auto", "local_car_wash", "spalatorie"),
+        new("Vopsitorie", "format_paint", "vopsitorie"),
+        new("Vulcanizare", "tire_repair", "vulcanizare"),
+        new("Tuning & Accesorii", "tune", "tuning"),
+        new("Motociclete", "two_wheeler", "motociclete"),
+    };
+
+    private List<StepItem> Steps = new()
+    {
+        new(1, "search", "Caută", "Filtrează după serviciu, locație sau rating pentru a găsi atelierele din apropierea ta."),
+        new(2, "compare_arrows", "Compară", "Analizează profilurile, citește recenziile reale ale altor clienți și vezi prețurile estimate."),
+        new(3, "phone_in_talk", "Contactează", "Programează-te direct prin platformă sau sună la service pentru a stabili detaliile."),
+    };
+}

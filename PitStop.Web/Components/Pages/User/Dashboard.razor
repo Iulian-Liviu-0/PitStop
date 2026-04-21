@@ -1,0 +1,330 @@
+@page "/dashboard"
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IFavoriteShopRepository FavoriteRepo
+@inject IReviewRepository ReviewRepo
+@inject UserManager<ApplicationUser> UserMgr
+
+<PageTitle>Contul meu - PitStop</PageTitle>
+
+<!-- Header -->
+<div class="bg-hero-dark text-white py-10 px-6 md:px-12">
+    <div class="max-w-screen-xl mx-auto flex items-center gap-5">
+        <div class="w-14 h-14 rounded-full bg-brand-red flex items-center justify-center text-xl font-black shrink-0" style="font-family: Manrope, sans-serif;">
+            @_initials
+        </div>
+        <div>
+            <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-0.5">Contul meu</p>
+            <h1 class="font-black text-2xl md:text-3xl tracking-tight" style="font-family: Manrope, sans-serif;">
+                Bun venit, @_fullName!
+            </h1>
+        </div>
+    </div>
+</div>
+
+<!-- Tab bar -->
+<div class="bg-white border-b border-border-light sticky top-0 z-10">
+    <div class="max-w-screen-xl mx-auto px-6 md:px-12 flex gap-0 overflow-x-auto">
+        @foreach (var (id, label) in new[] {
+            ("favorites", $"Favorite ({_favorites.Count})"),
+            ("reviews",   $"Recenziile mele ({_reviews.Count})"),
+            ("settings",  "Setări cont")
+        })
+        {
+            <button @onclick="() => _tab = id"
+                    class="px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors @(_tab == id ? "border-brand-red text-brand-red" : "border-transparent text-text-muted hover:text-text-main")">
+                @label
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Content -->
+<div class="max-w-screen-xl mx-auto px-6 md:px-12 py-8">
+
+    @if (_tab == "favorites")
+    {
+        @if (_favorites.Count == 0)
+        {
+            <div class="flex flex-col items-center justify-center py-20 text-text-muted gap-3">
+                <span class="material-symbols-outlined text-5xl">favorite_border</span>
+                <p class="font-medium">Nu ai salvat niciun serviciu la favorite.</p>
+                <a href="/servicii" class="text-sm text-brand-red font-bold hover:underline">Descoperă servicii →</a>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var fav in _favorites)
+                {
+                    <div class="relative group">
+                        <ShopCard Shop="MapToCard(fav.Shop)" Variant="ShopCardVariant.Grid" />
+                        <button @onclick="async () => await RemoveFavorite(fav)"
+                                class="absolute top-3 right-3 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center text-brand-red hover:bg-brand-red hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+                            <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    }
+    else if (_tab == "reviews")
+    {
+        @if (_reviews.Count == 0)
+        {
+            <div class="flex flex-col items-center justify-center py-20 text-text-muted gap-3">
+                <span class="material-symbols-outlined text-5xl">rate_review</span>
+                <p class="font-medium">Nu ai scris nicio recenzie încă.</p>
+                <a href="/servicii" class="text-sm text-brand-red font-bold hover:underline">Găsește servicii de recenzat →</a>
+            </div>
+        }
+        else
+        {
+            <div class="max-w-2xl flex flex-col gap-4">
+                @foreach (var rev in _reviews)
+                {
+                    <div class="bg-white rounded-xl border border-border-light p-5">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <a href="/serviciu/@rev.ShopId" class="font-bold text-text-main hover:text-brand-red transition-colors">
+                                    @rev.Shop?.Name
+                                </a>
+                                <p class="text-xs text-text-muted mt-0.5">@rev.CreatedAt.ToString("dd MMMM yyyy")</p>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <div class="flex gap-0.5">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <span class="material-symbols-outlined text-base @(i <= rev.Rating ? "text-brand-red" : "text-gray-300")"
+                                              style="font-variation-settings: 'FILL' 1;">star</span>
+                                    }
+                                </div>
+                                <button @onclick="async () => await DeleteReview(rev)"
+                                        class="w-8 h-8 rounded-lg border border-red-200 text-brand-red hover:bg-brand-red-light flex items-center justify-center transition-colors ml-1">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-sm text-text-muted leading-relaxed">@rev.Text</p>
+                    </div>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <!-- Settings -->
+        <div class="max-w-lg flex flex-col gap-6">
+
+            <!-- Profile info -->
+            <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
+                <h2 class="font-bold text-lg text-text-main mb-5" style="font-family: Manrope, sans-serif;">Informații cont</h2>
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-sm font-semibold text-text-main">Nume complet</label>
+                        <input @bind="_editFullName" type="text"
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-sm font-semibold text-text-main">Email</label>
+                        <input value="@_email" type="email" disabled
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-muted bg-surface-container cursor-not-allowed" />
+                        <p class="text-xs text-text-muted">Modificarea email-ului nu este disponibilă momentan.</p>
+                    </div>
+
+                    @if (_profileSaveSuccess)
+                    {
+                        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                            <span class="material-symbols-outlined text-lg">check_circle</span>
+                            Informațiile au fost salvate.
+                        </div>
+                    }
+
+                    <button @onclick="SaveProfile" disabled="@_saving"
+                            class="self-start bg-brand-red hover:bg-brand-red-dark disabled:opacity-50 text-white font-bold text-sm px-7 py-2.5 rounded-lg transition-colors">
+                        @(_saving ? "Se salvează..." : "Salvează")
+                    </button>
+                </div>
+            </div>
+
+            <!-- Password change -->
+            <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
+                <h2 class="font-bold text-lg text-text-main mb-5" style="font-family: Manrope, sans-serif;">Schimbă parola</h2>
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-sm font-semibold text-text-main">Parola curentă</label>
+                        <input @bind="_currentPassword" type="password"
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-sm font-semibold text-text-main">Parola nouă</label>
+                        <input @bind="_newPassword" type="password"
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-sm font-semibold text-text-main">Confirmă parola nouă</label>
+                        <input @bind="_confirmPassword" type="password"
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                    </div>
+
+                    @if (_passwordError is { Length: > 0 })
+                    {
+                        <div class="flex items-center gap-2 bg-brand-red-light border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red">
+                            <span class="material-symbols-outlined text-lg">error</span>
+                            @_passwordError
+                        </div>
+                    }
+                    @if (_passwordSuccess)
+                    {
+                        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                            <span class="material-symbols-outlined text-lg">check_circle</span>
+                            Parola a fost schimbată cu succes.
+                        </div>
+                    }
+
+                    <button @onclick="ChangePassword" disabled="@_saving"
+                            class="self-start bg-brand-red hover:bg-brand-red-dark disabled:opacity-50 text-white font-bold text-sm px-7 py-2.5 rounded-lg transition-colors">
+                        @(_saving ? "Se procesează..." : "Schimbă parola")
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    private string _tab = "favorites";
+    private string _userId = "";
+    private string _fullName = "";
+    private string _initials = "";
+    private string _email = "";
+    private bool _saving;
+
+    private List<FavoriteShop> _favorites = [];
+    private List<Review> _reviews = [];
+
+    // Settings
+    private string _editFullName = "";
+    private string _currentPassword = "";
+    private string _newPassword = "";
+    private string _confirmPassword = "";
+    private bool _profileSaveSuccess;
+    private bool _passwordSuccess;
+    private string _passwordError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/auth/login", forceLoad: true);
+            return;
+        }
+
+        _userId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
+        var user = await UserMgr.FindByIdAsync(_userId);
+        if (user is not null)
+        {
+            _fullName = user.FullName is { Length: > 0 } n ? n : user.Email ?? "Utilizator";
+            _email = user.Email ?? "";
+            _editFullName = user.FullName ?? "";
+            _initials = Initials(_fullName);
+        }
+
+        _favorites = await FavoriteRepo.GetByUserIdAsync(_userId);
+        _reviews = await ReviewRepo.GetByUserIdAsync(_userId);
+    }
+
+    private async Task RemoveFavorite(FavoriteShop fav)
+    {
+        await FavoriteRepo.RemoveAsync(_userId, fav.ShopId);
+        _favorites.Remove(fav);
+    }
+
+    private async Task DeleteReview(Review rev)
+    {
+        await ReviewRepo.DeleteAsync(rev.Id);
+        _reviews.Remove(rev);
+    }
+
+    private async Task SaveProfile()
+    {
+        _saving = true;
+        _profileSaveSuccess = false;
+        var user = await UserMgr.FindByIdAsync(_userId);
+        if (user is not null)
+        {
+            user.FullName = _editFullName.Trim();
+            await UserMgr.UpdateAsync(user);
+            _fullName = user.FullName is { Length: > 0 } n ? n : _email;
+            _initials = Initials(_fullName);
+        }
+        _saving = false;
+        _profileSaveSuccess = true;
+    }
+
+    private async Task ChangePassword()
+    {
+        _passwordError = "";
+        _passwordSuccess = false;
+
+        if (string.IsNullOrWhiteSpace(_currentPassword) || string.IsNullOrWhiteSpace(_newPassword))
+        {
+            _passwordError = "Completează toate câmpurile.";
+            return;
+        }
+        if (_newPassword != _confirmPassword)
+        {
+            _passwordError = "Parolele noi nu coincid.";
+            return;
+        }
+        if (_newPassword.Length < 8)
+        {
+            _passwordError = "Parola nouă trebuie să aibă cel puțin 8 caractere.";
+            return;
+        }
+
+        _saving = true;
+        var user = await UserMgr.FindByIdAsync(_userId);
+        if (user is not null)
+        {
+            var result = await UserMgr.ChangePasswordAsync(user, _currentPassword, _newPassword);
+            if (result.Succeeded)
+            {
+                _passwordSuccess = true;
+                _currentPassword = "";
+                _newPassword = "";
+                _confirmPassword = "";
+            }
+            else
+            {
+                _passwordError = result.Errors.FirstOrDefault()?.Description ?? "Eroare la schimbarea parolei.";
+            }
+        }
+        _saving = false;
+    }
+
+    private static ShopCardModel MapToCard(Shop s) => new(
+        Id: s.Id,
+        Name: s.Name,
+        Category: s.Category.ToString(),
+        Location: s.City,
+        Rating: s.AverageRating,
+        Description: s.Description,
+        ImageUrl: s.Photos.FirstOrDefault()?.Url ?? "",
+        ReviewCount: s.ReviewCount
+    );
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+            : name.Length > 0 ? name[0].ToString().ToUpper() : "?";
+    }
+}

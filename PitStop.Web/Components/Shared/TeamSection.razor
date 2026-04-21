@@ -1,0 +1,35 @@
+<section class="bg-surface-container py-24 px-6 md:px-12">
+    <div class="max-w-screen-xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="font-bold text-3xl md:text-4xl text-text-main" style="font-family: Manrope, sans-serif;">Echipa din spatele PitStop</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            @foreach (var member in Members)
+            {
+                <div class="bg-white rounded-xl p-8 flex flex-col items-center text-center border border-border-light">
+                    <img src="@member.PhotoUrl"
+                         alt="@member.Name"
+                         class="w-24 h-24 rounded-full object-cover mb-5 grayscale border-4 border-surface-container" />
+                    <h3 class="font-bold text-lg text-text-main" style="font-family: Manrope, sans-serif;">@member.Name</h3>
+                    <p class="text-brand-red text-sm font-medium mt-1">@member.Role</p>
+                </div>
+            }
+
+        </div>
+    </div>
+</section>
+
+@code {
+    private record TeamMember(string Name, string Role, string PhotoUrl);
+
+    private List<TeamMember> Members =
+    [
+        new("Alexandru Popescu", "Fondator & CEO",
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuBWMWp0CruOl2QUAt7nrn_A-wluF0hbLV7ZSBUE5QaA3_5wuBCzTtH01jMxFMQNOqptdocxAmqZDcH-Vn4mx_4tIx6EpE-gsqGgQP7pv9eRY29IezKvQM1d-sWY-CU3urzl2fXbgobfRPo493wOQNO5bR9XuHQdwiEH681j8_U5LmFPtFwhvfP71j41UxwlnOekgzCNTGmhfesjD0XrgW3GJfHRJD7uXIH_aTJ9D4TNOW0CBntF8TdeUPZRpnvnRn9U2xUmjbA-HrQc"),
+        new("Mihai Ionescu", "Lead Developer",
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuDMOHRary-22iIP4KspUzUadGW5Eml3o-fILb6veMSWTvyaBrfi_6gfDlwkun3WC_utQ0L-OhrROCm3KlnU-MqDhz4AFu6mZzci3zl-x03pl-XoOGpSjyU7RauZkqpRpqaEPVlyy1wqiwd5sS7r-42s05Qhp21C59VpgkuGaO7gfYk6XegsusvU0Oo_-6eWKXZTrzLS-p9cUBbMgoNUGDf9W6gfYysdFh3TvoZngkzDUmhwH9saNwn5KNrfITQ5Eyx8a-FY2Gp5J9rQ"),
+        new("Elena Radu", "Community Manager",
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuCPounyFvGY4YjQ6u7mMd8z2BX8-EmC3a1_gCAoJDEeR8L6vyCcUZEZBEYOkRstUyi61V_64eYgESSXYYJq2LDTfOfkttwhwcsb_Jqqwnj8vw6gFTN7JSzrtFB7_7Nk3v2OwfPFYswWqgOc3NNJISlDeDSq6o4S3ztrRBgcjNcZQzAbcilz4jipV-r5ZO7HNiAvK_MMPpvqF8IfciGoTRkNIErkk8W14XMPeCIJpiO_5FdpS4olPcDCS0lnMnsC__HSPxox-WZRBXCU"),
+    ];
+}

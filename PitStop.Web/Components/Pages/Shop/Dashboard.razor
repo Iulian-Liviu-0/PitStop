@@ -1,0 +1,614 @@
+@page "/shop/dashboard"
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IShopRepository ShopRepo
+@inject IReviewRepository ReviewRepo
+
+<PageTitle>Dashboard Service - PitStop</PageTitle>
+
+@if (_loading)
+{
+    <div class="flex items-center justify-center min-h-screen text-text-muted gap-2">
+        <span class="material-symbols-outlined animate-spin">progress_activity</span>
+        Se încarcă...
+    </div>
+}
+else if (_shop is null)
+{
+    <div class="min-h-screen bg-surface flex flex-col items-center justify-center gap-4 text-center px-6">
+        <span class="material-symbols-outlined text-6xl text-text-muted">store_off</span>
+        <h1 class="font-bold text-2xl text-text-main" style="font-family: Manrope, sans-serif;">Niciun serviciu asociat</h1>
+        <p class="text-text-muted max-w-md">Contul tău nu este asociat cu niciun serviciu. Contactează echipa PitStop pentru a finaliza configurarea.</p>
+        <a href="/contact" class="mt-2 bg-brand-red text-white font-bold px-6 py-3 rounded-lg text-sm hover:bg-brand-red-dark transition-colors">
+            Contactează-ne
+        </a>
+    </div>
+}
+else
+{
+    <!-- Header -->
+    <div class="bg-hero-dark text-white py-10 px-6 md:px-12">
+        <div class="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Dashboard serviciu</p>
+                <h1 class="font-black text-3xl tracking-tight" style="font-family: Manrope, sans-serif;">@_shop.Name</h1>
+                <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold @ShopStatusClass(_shop.Status)">
+                    @ShopStatusLabel(_shop.Status)
+                </span>
+            </div>
+            <a href="/serviciu/@_shop.Id" target="_blank"
+               class="inline-flex items-center gap-2 border border-white/20 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-white/10 transition-colors shrink-0">
+                <span class="material-symbols-outlined text-base">open_in_new</span>
+                Vizualizează profilul public
+            </a>
+        </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="bg-white border-b border-border-light sticky top-0 z-10">
+        <div class="max-w-screen-xl mx-auto px-6 md:px-12 flex gap-0 overflow-x-auto">
+            @foreach (var (id, label) in new[] { ("profile", "Profil"), ("services", $"Servicii ({_services.Count})"), ("hours", "Program"), ("reviews", $"Recenzii ({_reviewTotal})") })
+            {
+                <button @onclick="() => _tab = id"
+                        class="px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors @(_tab == id ? "border-brand-red text-brand-red" : "border-transparent text-text-muted hover:text-text-main")">
+                    @label
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="max-w-screen-xl mx-auto px-6 md:px-12 py-8">
+
+        @if (_tab == "profile")
+        {
+            <div class="max-w-2xl">
+                <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
+                    <h2 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Informații profil</h2>
+
+                    <div class="flex flex-col gap-5">
+                        <!-- Name -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-semibold text-text-main">Nume serviciu</label>
+                            <input @bind="_pName" type="text"
+                                   class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                        </div>
+
+                        <!-- Description -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-semibold text-text-main">Descriere</label>
+                            <textarea @bind="_pDescription" rows="4"
+                                      class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors resize-none"></textarea>
+                        </div>
+
+                        <!-- Address + City row -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-semibold text-text-main">Adresă</label>
+                                <input @bind="_pAddress" type="text"
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-semibold text-text-main">Oraș</label>
+                                <input @bind="_pCity" type="text"
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                            </div>
+                        </div>
+
+                        <!-- County + Sector row -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-semibold text-text-main">Județ</label>
+                                <input @bind="_pCounty" type="text"
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-semibold text-text-main">Sector (opțional)</label>
+                                <input @bind="_pSector" type="text"
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                            </div>
+                        </div>
+
+                        <!-- Phone + Email -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-semibold text-text-main">Telefon</label>
+                                <input @bind="_pPhone" type="tel"
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-semibold text-text-main">Email</label>
+                                <input @bind="_pEmail" type="email"
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                            </div>
+                        </div>
+
+                        <!-- Website -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-semibold text-text-main">Website (opțional)</label>
+                            <input @bind="_pWebsite" type="url" placeholder="https://..."
+                                   class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                        </div>
+
+                        @if (_profileSaved)
+                        {
+                            <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                                <span class="material-symbols-outlined text-lg">check_circle</span>
+                                Profilul a fost salvat cu succes.
+                            </div>
+                        }
+
+                        <button @onclick="SaveProfile" disabled="@_saving"
+                                class="self-start bg-brand-red hover:bg-brand-red-dark disabled:opacity-50 text-white font-bold text-sm px-8 py-3 rounded-lg transition-colors">
+                            @(_saving ? "Se salvează..." : "Salvează modificările")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (_tab == "services")
+        {
+            <div class="max-w-3xl flex flex-col gap-4">
+                <!-- Add button -->
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">Servicii oferite</h2>
+                    <button @onclick="() => _isAdding = !_isAdding"
+                            class="inline-flex items-center gap-2 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-sm px-4 py-2.5 rounded-lg transition-colors">
+                        <span class="material-symbols-outlined text-base">@(_isAdding ? "close" : "add")</span>
+                        @(_isAdding ? "Anulează" : "Adaugă serviciu")
+                    </button>
+                </div>
+
+                <!-- Add form -->
+                @if (_isAdding)
+                {
+                    <div class="bg-white rounded-xl border-2 border-brand-red/30 p-6 flex flex-col gap-4">
+                        <h3 class="font-bold text-text-main text-sm">Serviciu nou</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-xs font-semibold text-text-warm">Denumire *</label>
+                                <input @bind="_newName" placeholder="ex: Schimb ulei"
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-xs font-semibold text-text-warm">Descriere</label>
+                                <input @bind="_newDescription" placeholder="Scurtă descriere..."
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-xs font-semibold text-text-warm">Preț minim (RON)</label>
+                                <input @bind="_newPriceMin" type="number" min="0" placeholder="0"
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-xs font-semibold text-text-warm">Preț maxim (RON)</label>
+                                <input @bind="_newPriceMax" type="number" min="0" placeholder="0"
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                            </div>
+                        </div>
+                        <button @onclick="AddService" disabled="@(string.IsNullOrWhiteSpace(_newName))"
+                                class="self-start bg-brand-red hover:bg-brand-red-dark disabled:opacity-50 text-white font-bold text-sm px-6 py-2.5 rounded-lg transition-colors">
+                            Adaugă
+                        </button>
+                    </div>
+                }
+
+                <!-- Services list -->
+                @if (_services.Count == 0)
+                {
+                    <div class="bg-white rounded-xl border border-border-light flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                        <span class="material-symbols-outlined text-4xl">build_circle</span>
+                        <p class="text-sm">Niciun serviciu adăugat încă.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var svc in _services)
+                    {
+                        <div class="bg-white rounded-xl border border-border-light p-5">
+                            @if (svc.IsEditing)
+                            {
+                                <div class="flex flex-col gap-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="flex flex-col gap-1.5">
+                                            <label class="text-xs font-semibold text-text-warm">Denumire</label>
+                                            <input @bind="svc.EditName"
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                        </div>
+                                        <div class="flex flex-col gap-1.5">
+                                            <label class="text-xs font-semibold text-text-warm">Descriere</label>
+                                            <input @bind="svc.EditDescription"
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                        </div>
+                                        <div class="flex flex-col gap-1.5">
+                                            <label class="text-xs font-semibold text-text-warm">Preț minim (RON)</label>
+                                            <input @bind="svc.EditPriceMin" type="number" min="0"
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                        </div>
+                                        <div class="flex flex-col gap-1.5">
+                                            <label class="text-xs font-semibold text-text-warm">Preț maxim (RON)</label>
+                                            <input @bind="svc.EditPriceMax" type="number" min="0"
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button @onclick="async () => await SaveService(svc)"
+                                                class="bg-brand-red hover:bg-brand-red-dark text-white font-bold text-sm px-5 py-2 rounded-lg transition-colors">
+                                            Salvează
+                                        </button>
+                                        <button @onclick="svc.CancelEdit"
+                                                class="border border-border-light text-text-muted hover:text-text-main text-sm font-bold px-5 py-2 rounded-lg transition-colors">
+                                            Anulează
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p class="font-bold text-text-main">@svc.Name</p>
+                                        @if (svc.Description is { Length: > 0 })
+                                        {
+                                            <p class="text-sm text-text-muted mt-0.5">@svc.Description</p>
+                                        }
+                                        <p class="text-sm font-semibold text-brand-red mt-2">@FormatPrice(svc.PriceMin, svc.PriceMax)</p>
+                                    </div>
+                                    <div class="flex gap-2 shrink-0">
+                                        <button @onclick="svc.BeginEdit"
+                                                class="w-8 h-8 rounded-lg border border-border-light text-text-muted hover:text-text-main hover:bg-surface-container flex items-center justify-center transition-colors">
+                                            <span class="material-symbols-outlined text-lg">edit</span>
+                                        </button>
+                                        <button @onclick="async () => await DeleteService(svc)"
+                                                class="w-8 h-8 rounded-lg border border-red-200 text-brand-red hover:bg-brand-red-light flex items-center justify-center transition-colors">
+                                            <span class="material-symbols-outlined text-lg">delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else if (_tab == "hours")
+        {
+            <div class="max-w-2xl">
+                <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
+                    <h2 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Program de funcționare</h2>
+
+                    <div class="flex flex-col gap-3">
+                        @foreach (var row in _hours)
+                        {
+                            <div class="flex items-center gap-4 py-3 border-b border-border-light last:border-b-0">
+                                <span class="w-20 text-sm font-semibold text-text-main shrink-0">@row.DayName</span>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" @bind="row.IsClosed"
+                                           class="h-4 w-4 rounded border-gray-300 text-brand-red focus:ring-brand-red" />
+                                    <span class="text-sm text-text-muted">Închis</span>
+                                </label>
+                                @if (!row.IsClosed)
+                                {
+                                    <div class="flex items-center gap-2 ml-auto">
+                                        <input type="time" value="@row.OpenTime" @onchange="e => row.OpenTime = e.Value?.ToString() ?? string.Empty"
+                                               class="border border-border-light rounded px-3 py-1.5 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                        <span class="text-text-muted text-sm">–</span>
+                                        <input type="time" value="@row.CloseTime" @onchange="e => row.CloseTime = e.Value?.ToString() ?? string.Empty"
+                                               class="border border-border-light rounded px-3 py-1.5 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @if (_hoursSaved)
+                    {
+                        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 mt-5">
+                            <span class="material-symbols-outlined text-lg">check_circle</span>
+                            Programul a fost salvat cu succes.
+                        </div>
+                    }
+
+                    <button @onclick="SaveHours" disabled="@_saving"
+                            class="mt-6 bg-brand-red hover:bg-brand-red-dark disabled:opacity-50 text-white font-bold text-sm px-8 py-3 rounded-lg transition-colors">
+                        @(_saving ? "Se salvează..." : "Salvează programul")
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Reviews tab -->
+            @if (_reviews.Count == 0)
+            {
+                <div class="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                    <span class="material-symbols-outlined text-4xl">rate_review</span>
+                    <p class="text-sm">Nicio recenzie primită încă.</p>
+                </div>
+            }
+            else
+            {
+                <div class="max-w-2xl flex flex-col gap-4">
+                    @foreach (var rev in _reviews)
+                    {
+                        <div class="bg-white rounded-xl border border-border-light p-5">
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-brand-red-light text-brand-red flex items-center justify-center text-xs font-bold shrink-0">
+                                        @rev.UserInitials
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-text-main text-sm">@rev.UserName</p>
+                                        <p class="text-xs text-text-muted">@rev.CreatedAt.ToString("dd MMM yyyy")</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-0.5 shrink-0">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <span class="material-symbols-outlined text-base @(i <= rev.Rating ? "text-brand-red" : "text-gray-300")"
+                                              style="font-variation-settings: 'FILL' 1;">star</span>
+                                    }
+                                </div>
+                            </div>
+                            <p class="text-sm text-text-muted leading-relaxed">@rev.Text</p>
+                        </div>
+                    }
+
+                    @if (_reviewTotal > _reviews.Count)
+                    {
+                        <button @onclick="LoadMoreReviews"
+                                class="w-full py-3 border border-border-light rounded-xl text-sm font-semibold text-text-muted hover:bg-surface-container transition-colors">
+                            Încarcă mai multe (@(_reviewTotal - _reviews.Count) rămase)
+                        </button>
+                    }
+                </div>
+            }
+        }
+
+    </div>
+}
+
+@code {
+    private string _tab = "profile";
+    private bool _loading = true;
+    private bool _saving;
+    private Shop? _shop;
+
+    // Profile fields
+    private string _pName = "";
+    private string _pDescription = "";
+    private string _pAddress = "";
+    private string _pCity = "";
+    private string _pCounty = "";
+    private string _pSector = "";
+    private string _pPhone = "";
+    private string _pEmail = "";
+    private string _pWebsite = "";
+    private bool _profileSaved;
+
+    // Services
+    private List<ServiceRow> _services = [];
+    private bool _isAdding;
+    private string _newName = "";
+    private string _newDescription = "";
+    private decimal _newPriceMin;
+    private decimal _newPriceMax;
+
+    // Hours
+    private List<HourRow> _hours = [];
+    private bool _hoursSaved;
+    private static readonly string[] DayNames = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
+
+    // Reviews
+    private List<Review> _reviews = [];
+    private int _reviewTotal;
+    private int _reviewPage = 1;
+    private const int ReviewPageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (!state.User.IsInRole("ShopOwner"))
+        {
+            Nav.NavigateTo("/auth/login", forceLoad: true);
+            return;
+        }
+
+        var userId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        _shop = await ShopRepo.GetByOwnerIdAsync(userId);
+
+        if (_shop is not null)
+        {
+            PopulateProfileFields();
+            _services = _shop.Services.Select(ServiceRow.FromEntity).ToList();
+            InitHours();
+            var (items, total) = await ReviewRepo.GetByShopIdAsync(_shop.Id, 1, ReviewPageSize);
+            _reviews = items;
+            _reviewTotal = total;
+        }
+
+        _loading = false;
+    }
+
+    private void PopulateProfileFields()
+    {
+        _pName = _shop!.Name;
+        _pDescription = _shop.Description;
+        _pAddress = _shop.Address;
+        _pCity = _shop.City;
+        _pCounty = _shop.County;
+        _pSector = _shop.Sector ?? "";
+        _pPhone = _shop.Phone;
+        _pEmail = _shop.Email;
+        _pWebsite = _shop.Website ?? "";
+    }
+
+    private void InitHours()
+    {
+        _hours = Enumerable.Range(0, 7).Select(i =>
+        {
+            var existing = _shop!.Hours.FirstOrDefault(h => h.DayOfWeek == i);
+            return new HourRow
+            {
+                Day = i,
+                DayName = DayNames[i],
+                IsClosed = existing?.IsClosed ?? i >= 5,
+                OpenTime = existing?.OpenTime?.ToString("HH:mm") ?? "09:00",
+                CloseTime = existing?.CloseTime?.ToString("HH:mm") ?? "18:00",
+            };
+        }).ToList();
+    }
+
+    private async Task SaveProfile()
+    {
+        _saving = true;
+        _profileSaved = false;
+        await ShopRepo.UpdateProfileAsync(_shop!.Id, _pName, _pDescription, _pAddress,
+            _pCity, _pCounty, _pPhone, _pEmail,
+            string.IsNullOrWhiteSpace(_pWebsite) ? null : _pWebsite,
+            string.IsNullOrWhiteSpace(_pSector) ? null : _pSector);
+        _shop.Name = _pName;
+        _saving = false;
+        _profileSaved = true;
+    }
+
+    private async Task AddService()
+    {
+        var entity = new ShopService
+        {
+            ShopId = _shop!.Id,
+            Name = _newName.Trim(),
+            Description = _newDescription.Trim(),
+            PriceMin = _newPriceMin,
+            PriceMax = _newPriceMax,
+        };
+        var saved = await ShopRepo.AddServiceAsync(entity);
+        _services.Add(ServiceRow.FromEntity(saved));
+        _newName = "";
+        _newDescription = "";
+        _newPriceMin = 0;
+        _newPriceMax = 0;
+        _isAdding = false;
+    }
+
+    private async Task SaveService(ServiceRow row)
+    {
+        var entity = new ShopService
+        {
+            Id = row.Id,
+            ShopId = _shop!.Id,
+            Name = row.EditName.Trim(),
+            Description = row.EditDescription.Trim(),
+            PriceMin = row.EditPriceMin,
+            PriceMax = row.EditPriceMax,
+        };
+        await ShopRepo.UpdateServiceAsync(entity);
+        row.Apply();
+    }
+
+    private async Task DeleteService(ServiceRow row)
+    {
+        await ShopRepo.DeleteServiceAsync(row.Id);
+        _services.Remove(row);
+    }
+
+    private async Task SaveHours()
+    {
+        _saving = true;
+        _hoursSaved = false;
+        var entities = _hours.Select(h => new ShopHour
+        {
+            DayOfWeek = h.Day,
+            IsClosed = h.IsClosed,
+            OpenTime = h.IsClosed ? null : TimeOnly.TryParse(h.OpenTime, out var ot) ? ot : null,
+            CloseTime = h.IsClosed ? null : TimeOnly.TryParse(h.CloseTime, out var ct) ? ct : null,
+        }).ToList();
+        await ShopRepo.UpsertHoursAsync(_shop!.Id, entities);
+        _saving = false;
+        _hoursSaved = true;
+    }
+
+    private async Task LoadMoreReviews()
+    {
+        _reviewPage++;
+        var (items, _) = await ReviewRepo.GetByShopIdAsync(_shop!.Id, _reviewPage, ReviewPageSize);
+        _reviews.AddRange(items);
+    }
+
+    private static string FormatPrice(decimal min, decimal max)
+    {
+        if (min == 0 && max == 0) return "La cerere";
+        if (min == max || max == 0) return $"{min:0} RON";
+        return $"{min:0} – {max:0} RON";
+    }
+
+    private static string ShopStatusClass(ShopStatus s) => s switch
+    {
+        ShopStatus.Active   => "bg-green-900/30 text-green-300",
+        ShopStatus.Pending  => "bg-orange-900/30 text-orange-300",
+        ShopStatus.Inactive => "bg-white/10 text-white/50",
+        _ => "bg-white/10 text-white/50"
+    };
+
+    private static string ShopStatusLabel(ShopStatus s) => s switch
+    {
+        ShopStatus.Active   => "Activ",
+        ShopStatus.Pending  => "În verificare",
+        ShopStatus.Inactive => "Inactiv",
+        _ => s.ToString()
+    };
+
+    private class ServiceRow
+    {
+        public int Id { get; init; }
+        public bool IsEditing { get; set; }
+        public string Name { get; private set; } = "";
+        public string Description { get; private set; } = "";
+        public decimal PriceMin { get; private set; }
+        public decimal PriceMax { get; private set; }
+        public string EditName { get; set; } = "";
+        public string EditDescription { get; set; } = "";
+        public decimal EditPriceMin { get; set; }
+        public decimal EditPriceMax { get; set; }
+
+        public static ServiceRow FromEntity(ShopService s) => new()
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Description = s.Description,
+            PriceMin = s.PriceMin,
+            PriceMax = s.PriceMax,
+        };
+
+        public void BeginEdit()
+        {
+            EditName = Name;
+            EditDescription = Description;
+            EditPriceMin = PriceMin;
+            EditPriceMax = PriceMax;
+            IsEditing = true;
+        }
+
+        public void CancelEdit() => IsEditing = false;
+
+        public void Apply()
+        {
+            Name = EditName;
+            Description = EditDescription;
+            PriceMin = EditPriceMin;
+            PriceMax = EditPriceMax;
+            IsEditing = false;
+        }
+    }
+
+    private class HourRow
+    {
+        public int Day { get; init; }
+        public string DayName { get; init; } = "";
+        public bool IsClosed { get; set; }
+        public string OpenTime { get; set; } = "09:00";
+        public string CloseTime { get; set; } = "18:00";
+    }
+}

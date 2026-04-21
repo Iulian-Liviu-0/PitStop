@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(findstr /i \"contact accordion FAQ details\")",
+      "Bash(dotnet build *)"
+    ]
+  }
+}

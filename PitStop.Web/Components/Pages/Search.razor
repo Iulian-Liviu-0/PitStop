@@ -1,0 +1,321 @@
+@page "/servicii"
+@rendermode InteractiveServer
+@inject IShopRepository ShopRepo
+
+<PageTitle>Căutare Servicii Auto & Moto - PitStop</PageTitle>
+
+<div class="min-h-screen bg-surface-bright text-text-main">
+    <main class="w-full max-w-screen-xl mx-auto px-6 md:px-10 py-8 flex flex-col lg:flex-row gap-10">
+
+        <!-- ─── SIDEBAR FILTERS ─── -->
+        <aside class="w-full lg:w-72 flex-shrink-0">
+            <div class="bg-surface-low rounded-xl p-6 space-y-6">
+                <h3 class="font-bold text-lg text-text-main" style="font-family: Manrope, sans-serif;">
+                    Filtrează Rezultatele
+                </h3>
+
+                <!-- Search -->
+                <div>
+                    <label class="block text-sm font-semibold text-text-warm mb-3">Cuvânt cheie</label>
+                    <input type="text" @bind="SearchQuery" @bind:after="FilterChanged"
+                           placeholder="ex: schimb ulei, frâne..."
+                           class="w-full bg-surface-container border border-gray-200 text-text-main text-sm rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-red/40" />
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-semibold text-text-warm mb-3">Categorie</label>
+                    <div class="space-y-2">
+                        @foreach (var category in Categories)
+                        {
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox"
+                                       checked="@category.Selected"
+                                       @onchange="async _ => await SelectCategory(category)"
+                                       class="h-5 w-5 rounded border-gray-300 text-brand-red focus:ring-brand-red" />
+                                <span class="text-sm text-text-main group-hover:text-brand-red transition-colors">
+                                    @category.Name
+                                </span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <!-- County -->
+                <div>
+                    <label class="block text-sm font-semibold text-text-warm mb-3">Județ / Oraș</label>
+                    <div class="relative">
+                        <select @bind="SelectedCounty" @bind:after="FilterChanged"
+                                class="w-full bg-surface-container border border-gray-200 text-text-main text-sm rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-red/40 appearance-none cursor-pointer">
+                            @foreach (var county in Counties)
+                            {
+                                <option value="@county">@county</option>
+                            }
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-2.5 text-text-warm pointer-events-none text-xl">
+                            expand_more
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Rating -->
+                <div>
+                    <label class="block text-sm font-semibold text-text-warm mb-3">Rating Minim</label>
+                    <div class="flex items-center gap-1">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            var star = i;
+                            <button @onclick="async () => await SetMinRating(star)"
+                                    class="transition-opacity hover:opacity-80">
+                                <span class="material-symbols-outlined text-2xl @(star <= MinRating ? "text-brand-red" : "text-gray-300")"
+                                      style="font-variation-settings: 'FILL' 1;">star</span>
+                            </button>
+                        }
+                        <span class="text-sm text-text-warm ml-2 font-medium">@($"{MinRating}.0+")</span>
+                    </div>
+                </div>
+
+                <!-- Open now -->
+                <div>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" @bind="OpenNow" @bind:after="FilterChanged"
+                               class="h-5 w-5 rounded border-gray-300 text-brand-red focus:ring-brand-red" />
+                        <span class="text-sm font-semibold text-text-warm group-hover:text-brand-red transition-colors">
+                            Deschis acum
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Reset -->
+                <button @onclick="ResetFilters"
+                        class="w-full py-2.5 px-4 text-sm font-semibold text-brand-red border border-brand-red/20 rounded hover:bg-brand-red/5 transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">refresh</span>
+                    Resetează filtrele
+                </button>
+            </div>
+        </aside>
+
+        <!-- ─── RESULTS ─── -->
+        <section class="flex-grow flex flex-col">
+
+            <!-- Results header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <h1 class="text-2xl font-bold text-text-main" style="font-family: Manrope, sans-serif;">
+                    <span>@_totalCount rezultate găsite pentru: </span>
+                    <span class="text-brand-red">@(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)</span>
+                </h1>
+                <div class="flex items-center gap-3">
+                    <label class="text-sm text-text-warm whitespace-nowrap">Sortează după:</label>
+                    <div class="relative w-52">
+                        <select @bind="SortOrder" @bind:after="SortChanged"
+                                class="w-full bg-white border border-gray-200 text-text-main text-sm rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-red/40 appearance-none cursor-pointer">
+                            <option value="recommended">Recomandate</option>
+                            <option value="rating">Rating (Descrescător)</option>
+                            <option value="reviews">Cele mai multe recenzii</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-2 text-text-warm pointer-events-none text-xl">
+                            expand_more
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            @if (_loading)
+            {
+                <div class="flex items-center justify-center py-20 text-text-muted">
+                    <span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>
+                    Se încarcă...
+                </div>
+            }
+            else if (_results.Count == 0)
+            {
+                <div class="flex flex-col items-center justify-center py-20 text-text-muted gap-3">
+                    <span class="material-symbols-outlined text-5xl">search_off</span>
+                    <p class="font-medium">Niciun rezultat găsit. Încearcă să modifici filtrele.</p>
+                </div>
+            }
+            else
+            {
+                <!-- Cards grid -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-10">
+                    @foreach (var shop in _results)
+                    {
+                        <ShopCard Shop="shop" Variant="ShopCardVariant.Row" />
+                    }
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex justify-center items-center gap-2 mt-auto">
+                    <button @onclick="PrevPage" disabled="@(CurrentPage == 1)"
+                            class="w-10 h-10 flex items-center justify-center rounded text-text-warm hover:bg-surface-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        var pageNum = i;
+                        <button @onclick="async () => await GoToPage(pageNum)"
+                                class="w-10 h-10 flex items-center justify-center rounded font-medium transition-colors @GetPageClass(pageNum)">
+                            @pageNum
+                        </button>
+                    }
+
+                    <button @onclick="NextPage" disabled="@(CurrentPage == TotalPages)"
+                            class="w-10 h-10 flex items-center justify-center rounded text-text-warm hover:bg-surface-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                </div>
+            }
+
+        </section>
+    </main>
+</div>
+
+@code {
+    private int MinRating = 1;
+    private bool OpenNow = false;
+    private string SelectedCounty = "Toate județele";
+    private string SortOrder = "recommended";
+    private string SearchQuery = string.Empty;
+    private int CurrentPage = 1;
+    private const int PageSize = 6;
+
+    private List<ShopCardModel> _results = [];
+    private int _totalCount;
+    private bool _loading;
+
+    private List<CategoryFilter> Categories =
+    [
+        new("Service Auto", ShopCategory.ServiceAuto, false),
+        new("Piese Auto", ShopCategory.PieseAuto, false),
+        new("Vulcanizare", ShopCategory.Vulcanizare, false),
+        new("Spălătorie Auto", ShopCategory.Spalatorie, false),
+        new("Vopsitorie", ShopCategory.Vopsitorie, false),
+        new("Tuning & Accesorii", ShopCategory.Tuning, false),
+        new("Detailing", ShopCategory.Detailing, false),
+        new("ITP", ShopCategory.ITP, false),
+        new("Service Moto", ShopCategory.ServiceMoto, false),
+        new("Piese Moto", ShopCategory.PieseMoto, false),
+        new("Tractări", ShopCategory.Tractari, false),
+        new("Altele", ShopCategory.Altele, false),
+    ];
+
+    private static readonly List<string> Counties =
+    [
+        "Toate județele", "București", "Cluj", "Timiș", "Brașov", "Iași",
+        "Constanța", "Prahova", "Sibiu", "Mureș", "Bihor"
+    ];
+
+    protected override async Task OnInitializedAsync() => await LoadShops();
+
+    private async Task LoadShops()
+    {
+        _loading = true;
+        var selected = Categories.FirstOrDefault(c => c.Selected);
+        var city = SelectedCounty == "Toate județele" ? "" : SelectedCounty;
+        double? rating = MinRating >= 2 ? MinRating : null;
+
+        var (items, total) = await ShopRepo.SearchAsync(
+            SearchQuery, city, selected?.Value, rating,
+            OpenNow ? true : null, CurrentPage, PageSize);
+
+        _totalCount = total;
+        _results = SortOrder switch
+        {
+            "reviews" => items.Select(MapToCard).OrderByDescending(s => s.ReviewCount ?? 0).ToList(),
+            _ => items.Select(MapToCard).ToList(),
+        };
+        _loading = false;
+    }
+
+    private async Task FilterChanged() { CurrentPage = 1; await LoadShops(); }
+
+    private void SortChanged()
+    {
+        _results = SortOrder switch
+        {
+            "reviews" => [.. _results.OrderByDescending(s => s.ReviewCount ?? 0)],
+            _ => [.. _results.OrderByDescending(s => s.Rating)],
+        };
+    }
+
+    private async Task SelectCategory(CategoryFilter clicked)
+    {
+        var wasSelected = clicked.Selected;
+        foreach (var c in Categories) c.Selected = false;
+        if (!wasSelected) clicked.Selected = true;
+        CurrentPage = 1;
+        await LoadShops();
+    }
+
+    private async Task SetMinRating(int rating) { MinRating = rating; CurrentPage = 1; await LoadShops(); }
+
+    private async Task ResetFilters()
+    {
+        MinRating = 1;
+        OpenNow = false;
+        SelectedCounty = "Toate județele";
+        SortOrder = "recommended";
+        SearchQuery = string.Empty;
+        Categories.ForEach(c => c.Selected = false);
+        CurrentPage = 1;
+        await LoadShops();
+    }
+
+    private async Task GoToPage(int page) { CurrentPage = page; await LoadShops(); }
+    private async Task PrevPage() { if (CurrentPage > 1) { CurrentPage--; await LoadShops(); } }
+    private async Task NextPage() { if (CurrentPage < TotalPages) { CurrentPage++; await LoadShops(); } }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(_totalCount / (double)PageSize));
+
+    private string GetPageClass(int pageNum) =>
+        pageNum == CurrentPage ? "bg-brand-red text-white shadow-sm" : "text-text-warm hover:bg-surface-container";
+
+    private static ShopCardModel MapToCard(Domain.Entities.Shop s) => new(
+        Id: s.Id,
+        Name: s.Name,
+        Category: CategoryDisplayName(s.Category),
+        Location: s.City,
+        Rating: s.AverageRating,
+        Description: s.Description,
+        ImageUrl: s.Photos.FirstOrDefault()?.Url ?? "",
+        ReviewCount: s.ReviewCount,
+        IsOpen: ComputeIsOpen(s)
+    );
+
+    private static bool? ComputeIsOpen(Domain.Entities.Shop s)
+    {
+        if (!s.Hours.Any()) return null;
+        var now = DateTime.UtcNow;
+        var dow = ((int)now.DayOfWeek + 6) % 7;
+        var time = TimeOnly.FromDateTime(now);
+        var hour = s.Hours.FirstOrDefault(h => h.DayOfWeek == dow);
+        if (hour is null || hour.IsClosed) return false;
+        if (hour.OpenTime is null || hour.CloseTime is null) return null;
+        return hour.OpenTime <= time && time <= hour.CloseTime;
+    }
+
+    private static string CategoryDisplayName(ShopCategory cat) => cat switch
+    {
+        ShopCategory.ServiceAuto  => "Service Auto",
+        ShopCategory.PieseAuto    => "Piese Auto",
+        ShopCategory.Spalatorie   => "Spălătorie",
+        ShopCategory.Vopsitorie   => "Vopsitorie",
+        ShopCategory.Vulcanizare  => "Vulcanizare",
+        ShopCategory.Tuning       => "Tuning",
+        ShopCategory.Tractari     => "Tractări",
+        ShopCategory.Detailing    => "Detailing",
+        ShopCategory.ITP          => "ITP",
+        ShopCategory.ServiceMoto  => "Service Moto",
+        ShopCategory.PieseMoto    => "Piese Moto",
+        ShopCategory.Altele       => "Altele",
+        _                         => cat.ToString()
+    };
+
+    private class CategoryFilter(string name, ShopCategory value, bool selected)
+    {
+        public string Name { get; } = name;
+        public ShopCategory Value { get; } = value;
+        public bool Selected { get; set; } = selected;
+    }
+}

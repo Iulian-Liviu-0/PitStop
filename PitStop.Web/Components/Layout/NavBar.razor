@@ -1,0 +1,161 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserMgr
+
+<nav class="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-border-light shadow-sm">
+    <div class="flex justify-between items-center px-6 md:px-10 py-4 max-w-screen-xl mx-auto">
+
+        <!-- Logo -->
+        <a href="/" class="text-2xl font-black italic tracking-tighter text-brand-red"
+           style="font-family: Manrope, sans-serif;">
+            PitStop
+        </a>
+
+        <!-- Nav links -->
+        <div class="hidden md:flex gap-8 items-center">
+            <NavLink href="/"
+                     Match="NavLinkMatch.All"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red transition-colors"
+                     ActiveClass="text-brand-red border-b-2 border-brand-red pb-0.5">
+                Acasă
+            </NavLink>
+            <NavLink href="/servicii"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red transition-colors"
+                     ActiveClass="text-brand-red border-b-2 border-brand-red pb-0.5">
+                Servicii
+            </NavLink>
+            <NavLink href="/despre-noi"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red transition-colors"
+                     ActiveClass="text-brand-red border-b-2 border-brand-red pb-0.5">
+                Despre Noi
+            </NavLink>
+            <NavLink href="/contact"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red transition-colors"
+                     ActiveClass="text-brand-red border-b-2 border-brand-red pb-0.5">
+                Contact
+            </NavLink>
+        </div>
+
+        <!-- Auth buttons -->
+        <div class="hidden md:flex items-center gap-3">
+            @if (_isAuthenticated)
+            {
+                <a href="@(_isAdmin ? "/admin" : _isShopOwner ? "/shop/dashboard" : "/dashboard")"
+                   class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-surface-bright transition-colors">
+                    <div class="w-8 h-8 rounded-full bg-secondary-light flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-secondary text-lg">account_circle</span>
+                    </div>
+                    <div class="flex flex-col leading-tight">
+                        <span class="text-sm font-bold text-text-main">@_userName</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                            @(_isAdmin ? "Admin" : _isShopOwner ? "Service" : "Utilizator")
+                        </span>
+                    </div>
+                </a>
+                <div class="w-px h-8 bg-border-light mx-1"></div>
+                <form method="post" action="/auth/do-logout">
+                    <AntiforgeryToken />
+                    <button type="submit"
+                            class="font-bold text-sm border-2 border-brand-red text-brand-red hover:bg-brand-red hover:text-white transition-all px-5 py-2 rounded">
+                        Deconectare
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a href="/auth/login"
+                   class="font-bold text-sm border border-border-light text-text-muted hover:border-brand-red hover:text-brand-red transition-all px-5 py-2 rounded">
+                    Autentificare
+                </a>
+                <a href="/auth/register"
+                   class="font-bold text-sm bg-brand-red hover:bg-brand-red-dark text-white transition-colors px-5 py-2 rounded shadow-sm">
+                    Înregistrare
+                </a>
+            }
+        </div>
+
+        <!-- Mobile menu button -->
+        <button class="md:hidden text-text-main" @onclick="ToggleMobileMenu">
+            <span class="material-symbols-outlined text-2xl">
+                @(mobileMenuOpen ? "close" : "menu")
+            </span>
+        </button>
+    </div>
+
+    <!-- Mobile menu -->
+    @if (mobileMenuOpen)
+    {
+        <div class="md:hidden bg-white border-t border-border-light px-6 py-4 flex flex-col gap-4">
+            <NavLink href="/" Match="NavLinkMatch.All"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red"
+                     ActiveClass="text-brand-red">Acasă
+            </NavLink>
+            <NavLink href="/servicii"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red"
+                     ActiveClass="text-brand-red">Servicii
+            </NavLink>
+            <NavLink href="/despre-noi"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red"
+                     ActiveClass="text-brand-red">Despre Noi
+            </NavLink>
+            <NavLink href="/contact"
+                     class="font-bold text-sm uppercase tracking-wide text-text-muted hover:text-brand-red"
+                     ActiveClass="text-brand-red">Contact
+            </NavLink>
+            <hr class="border-border-light"/>
+            @if (_isAuthenticated)
+            {
+                @if (_isAdmin)
+                {
+                    <a href="/admin" class="font-bold text-sm text-text-muted hover:text-brand-red">Admin</a>
+                }
+                else if (_isShopOwner)
+                {
+                    <a href="/shop/dashboard" class="font-bold text-sm text-text-muted hover:text-brand-red">Dashboard</a>
+                }
+                else
+                {
+                    <a href="/dashboard" class="font-bold text-sm text-text-muted hover:text-brand-red">Contul meu</a>
+                }
+                <span class="text-sm font-medium text-text-muted">@_userName</span>
+                <form method="post" action="/auth/do-logout">
+                    <AntiforgeryToken />
+                    <button type="submit" class="font-bold text-sm text-brand-red text-left">
+                        Deconectare
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a href="/auth/login"
+                   class="font-bold text-sm text-text-muted hover:text-brand-red">Autentificare</a>
+                <a href="/auth/register" class="font-bold text-sm text-brand-red">Înregistrare</a>
+            }
+        </div>
+    }
+</nav>
+
+@code {
+    private bool mobileMenuOpen = false;
+    private bool _isAuthenticated;
+    private string? _userName;
+    private bool _isAdmin;
+    private bool _isShopOwner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        _isAdmin = authState.User.IsInRole("Admin");
+        _isShopOwner = authState.User.IsInRole("ShopOwner");
+
+        if (_isAuthenticated)
+        {
+            var user = await UserMgr.GetUserAsync(authState.User);
+            _userName = user?.FullName?.Split(' ')[0] ?? authState.User.Identity?.Name;
+        }
+    }
+
+    private void ToggleMobileMenu() => mobileMenuOpen = !mobileMenuOpen;
+}

@@ -1,0 +1,434 @@
+@page "/admin"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IShopRepository ShopRepo
+@inject IShopRequestRepository RequestRepo
+@inject IReviewRepository ReviewRepo
+@inject UserManager<ApplicationUser> UserMgr
+
+<PageTitle>Admin - PitStop</PageTitle>
+
+<!-- Header -->
+<div class="bg-hero-dark text-white py-10 px-6 md:px-12">
+    <div class="max-w-screen-xl mx-auto flex items-center justify-between">
+        <div>
+            <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Panou de administrare</p>
+            <h1 class="font-black text-3xl tracking-tight" style="font-family: Manrope, sans-serif;">PitStop Admin</h1>
+        </div>
+        <span class="material-symbols-outlined text-6xl text-white/20">admin_panel_settings</span>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="bg-surface-container border-b border-border-light">
+    <div class="max-w-screen-xl mx-auto px-6 md:px-12 py-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-5 border border-border-light flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-brand-red-light flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-brand-red text-xl">store</span>
+            </div>
+            <div>
+                <p class="text-xs text-text-muted">Servicii Active</p>
+                <p class="text-2xl font-black text-text-main" style="font-family: Manrope, sans-serif;">@_activeShops</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-border-light flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-orange-500 text-xl">inbox</span>
+            </div>
+            <div>
+                <p class="text-xs text-text-muted">Cereri Noi</p>
+                <p class="text-2xl font-black text-orange-500" style="font-family: Manrope, sans-serif;">@_pendingCount</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-border-light flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-secondary-light flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-secondary text-xl">group</span>
+            </div>
+            <div>
+                <p class="text-xs text-text-muted">Utilizatori</p>
+                <p class="text-2xl font-black text-text-main" style="font-family: Manrope, sans-serif;">@_userCount</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-border-light flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-surface-low flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-brand-blue text-xl">rate_review</span>
+            </div>
+            <div>
+                <p class="text-xs text-text-muted">Recenzii</p>
+                <p class="text-2xl font-black text-text-main" style="font-family: Manrope, sans-serif;">@_reviewCount</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab bar -->
+<div class="bg-white border-b border-border-light sticky top-0 z-10">
+    <div class="max-w-screen-xl mx-auto px-6 md:px-12 flex gap-0 overflow-x-auto">
+        @foreach (var (id, label) in Tabs)
+        {
+            <button @onclick="() => _tab = id"
+                    class="px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors @(_tab == id ? "border-brand-red text-brand-red" : "border-transparent text-text-muted hover:text-text-main")">
+                @label
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Content -->
+<div class="max-w-screen-xl mx-auto px-6 md:px-12 py-8">
+
+    @if (_tab == "requests")
+    {
+        <!-- Requests tab -->
+        <div class="bg-white rounded-xl border border-border-light overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
+                <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Toate cererile</h2>
+                <span class="text-sm text-text-muted">@_requests.Count înregistrări</span>
+            </div>
+            @if (_requests.Count == 0)
+            {
+                <div class="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                    <span class="material-symbols-outlined text-4xl">inbox</span>
+                    <p class="text-sm">Nicio cerere primită încă.</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-surface-container text-text-warm text-xs uppercase tracking-wide">
+                            <tr>
+                                <th class="px-5 py-3 text-left font-semibold">Serviciu</th>
+                                <th class="px-5 py-3 text-left font-semibold">Categorie</th>
+                                <th class="px-5 py-3 text-left font-semibold">Oraș</th>
+                                <th class="px-5 py-3 text-left font-semibold">Contact</th>
+                                <th class="px-5 py-3 text-left font-semibold">Data</th>
+                                <th class="px-5 py-3 text-left font-semibold">Status</th>
+                                <th class="px-5 py-3 text-left font-semibold">Acțiuni</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light">
+                            @foreach (var req in _requests)
+                            {
+                                <tr class="hover:bg-surface-container/50 transition-colors">
+                                    <td class="px-5 py-4 font-semibold text-text-main">@req.ShopName</td>
+                                    <td class="px-5 py-4 text-text-muted">@CategoryLabel(req.Category)</td>
+                                    <td class="px-5 py-4 text-text-muted">@req.City</td>
+                                    <td class="px-5 py-4">
+                                        <p class="font-medium text-text-main">@req.ContactPerson</p>
+                                        <p class="text-text-muted text-xs">@req.Email</p>
+                                    </td>
+                                    <td class="px-5 py-4 text-text-muted text-xs">@req.CreatedAt.ToString("dd MMM yyyy")</td>
+                                    <td class="px-5 py-4">
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-bold @RequestStatusClass(req.Status)">
+                                            @RequestStatusLabel(req.Status)
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        @if (req.Status == ShopRequestStatus.Pending)
+                                        {
+                                            <div class="flex flex-col gap-2">
+                                                <div class="flex gap-2">
+                                                    <button @onclick="async () => await ApproveRequest(req.Id)"
+                                                            class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded transition-colors">
+                                                        Aprobă
+                                                    </button>
+                                                    <button @onclick='() => { _rejectingId = _rejectingId == req.Id ? null : req.Id; _rejectNote = req.AdminNote ?? ""; }'
+                                                            class="px-3 py-1.5 bg-brand-red hover:bg-brand-red-dark text-white text-xs font-bold rounded transition-colors">
+                                                        Respinge
+                                                    </button>
+                                                </div>
+                                                @if (_rejectingId == req.Id)
+                                                {
+                                                    <div class="flex flex-col gap-1.5 mt-1">
+                                                        <input @bind="_rejectNote" placeholder="Notă opțională..."
+                                                               class="border border-border-light rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-red text-text-main" />
+                                                        <button @onclick="async () => await RejectRequest(req.Id)"
+                                                                class="px-3 py-1.5 bg-brand-red hover:bg-brand-red-dark text-white text-xs font-bold rounded transition-colors">
+                                                            Confirmă respingerea
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (req.AdminNote is { Length: > 0 })
+                                        {
+                                            <p class="text-xs text-text-muted italic max-w-[180px]">@req.AdminNote</p>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+    else if (_tab == "shops")
+    {
+        <!-- Shops tab -->
+        <div class="bg-white rounded-xl border border-border-light overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
+                <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Toate serviciile</h2>
+                <span class="text-sm text-text-muted">@_shops.Count înregistrări</span>
+            </div>
+            @if (_shops.Count == 0)
+            {
+                <div class="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                    <span class="material-symbols-outlined text-4xl">store</span>
+                    <p class="text-sm">Niciun serviciu adăugat.</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-surface-container text-text-warm text-xs uppercase tracking-wide">
+                            <tr>
+                                <th class="px-5 py-3 text-left font-semibold">Serviciu</th>
+                                <th class="px-5 py-3 text-left font-semibold">Categorie</th>
+                                <th class="px-5 py-3 text-left font-semibold">Oraș</th>
+                                <th class="px-5 py-3 text-left font-semibold">Status</th>
+                                <th class="px-5 py-3 text-left font-semibold">Rating</th>
+                                <th class="px-5 py-3 text-left font-semibold">Acțiuni</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light">
+                            @foreach (var shop in _shops)
+                            {
+                                <tr class="hover:bg-surface-container/50 transition-colors">
+                                    <td class="px-5 py-4 font-semibold text-text-main">@shop.Name</td>
+                                    <td class="px-5 py-4 text-text-muted">@CategoryLabel(shop.Category)</td>
+                                    <td class="px-5 py-4 text-text-muted">@shop.City</td>
+                                    <td class="px-5 py-4">
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-bold @ShopStatusClass(shop.Status)">
+                                            @ShopStatusLabel(shop.Status)
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <div class="flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-brand-red text-base" style="font-variation-settings: 'FILL' 1;">star</span>
+                                            <span class="font-semibold text-text-main">@shop.AverageRating.ToString("0.0")</span>
+                                            <span class="text-text-muted text-xs">(@shop.ReviewCount)</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <div class="flex gap-2">
+                                            <button @onclick="async () => await ToggleShopStatus(shop)"
+                                                    class="px-3 py-1.5 border text-xs font-bold rounded transition-colors @(shop.Status == ShopStatus.Active ? "border-red-200 text-brand-red hover:bg-brand-red-light" : "border-green-200 text-green-600 hover:bg-green-50")">
+                                                @(shop.Status == ShopStatus.Active ? "Dezactivează" : "Activează")
+                                            </button>
+                                            <a href="/serviciu/@shop.Id" target="_blank"
+                                               class="px-3 py-1.5 border border-border-light text-xs font-bold rounded text-text-muted hover:text-text-main hover:bg-surface-container transition-colors">
+                                                Vizualizează
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Users tab -->
+        <div class="bg-white rounded-xl border border-border-light overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
+                <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Toți utilizatorii</h2>
+                <span class="text-sm text-text-muted">@_users.Count înregistrări</span>
+            </div>
+            @if (_users.Count == 0)
+            {
+                <div class="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                    <span class="material-symbols-outlined text-4xl">group</span>
+                    <p class="text-sm">Niciun utilizator înregistrat.</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-surface-container text-text-warm text-xs uppercase tracking-wide">
+                            <tr>
+                                <th class="px-5 py-3 text-left font-semibold">Utilizator</th>
+                                <th class="px-5 py-3 text-left font-semibold">Email</th>
+                                <th class="px-5 py-3 text-left font-semibold">Rol</th>
+                                <th class="px-5 py-3 text-left font-semibold">Înregistrat</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light">
+                            @foreach (var user in _users)
+                            {
+                                <tr class="hover:bg-surface-container/50 transition-colors">
+                                    <td class="px-5 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-brand-red-light text-brand-red flex items-center justify-center text-xs font-bold">
+                                                @Initials(user.FullName ?? user.Email ?? "?")
+                                            </div>
+                                            <span class="font-medium text-text-main">@(user.FullName is { Length: > 0 } n ? n : "–")</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-4 text-text-muted">@user.Email</td>
+                                    <td class="px-5 py-4">
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-bold @RoleBadgeClass(_userRoles.GetValueOrDefault(user.Id, "User"))">
+                                            @_userRoles.GetValueOrDefault(user.Id, "User")
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4 text-text-muted text-xs">@user.CreatedAt.ToString("dd MMM yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+@code {
+    private string _tab = "requests";
+    private List<ShopRequest> _requests = [];
+    private List<Shop> _shops = [];
+    private List<ApplicationUser> _users = [];
+    private Dictionary<string, string> _userRoles = [];
+    private int _activeShops;
+    private int _pendingCount;
+    private int _userCount;
+    private int _reviewCount;
+    private int? _rejectingId;
+    private string _rejectNote = "";
+
+    private (string id, string label)[] Tabs => [
+        ("requests", $"Cereri ({_pendingCount})"),
+        ("shops", "Servicii"),
+        ("users", "Utilizatori"),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (!state.User.IsInRole("Admin"))
+        {
+            Nav.NavigateTo("/auth/login", forceLoad: true);
+            return;
+        }
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _requests = await RequestRepo.GetAllAsync();
+        _shops = await ShopRepo.GetAllAsync();
+        _users = await UserMgr.Users.ToListAsync();
+        _reviewCount = await ReviewRepo.GetTotalCountAsync();
+        _activeShops = _shops.Count(s => s.Status == ShopStatus.Active);
+        _pendingCount = _requests.Count(r => r.Status == ShopRequestStatus.Pending);
+        _userCount = _users.Count;
+
+        foreach (var user in _users)
+        {
+            var roles = await UserMgr.GetRolesAsync(user);
+            _userRoles[user.Id] = roles.FirstOrDefault() ?? "User";
+        }
+    }
+
+    private async Task ApproveRequest(int id)
+    {
+        var req = _requests.First(r => r.Id == id);
+        req.Status = ShopRequestStatus.Approved;
+        await RequestRepo.UpdateAsync(req);
+        _pendingCount = _requests.Count(r => r.Status == ShopRequestStatus.Pending);
+    }
+
+    private async Task RejectRequest(int id)
+    {
+        var req = _requests.First(r => r.Id == id);
+        req.Status = ShopRequestStatus.Rejected;
+        req.AdminNote = _rejectNote;
+        await RequestRepo.UpdateAsync(req);
+        _rejectingId = null;
+        _rejectNote = "";
+        _pendingCount = _requests.Count(r => r.Status == ShopRequestStatus.Pending);
+    }
+
+    private async Task ToggleShopStatus(Shop shop)
+    {
+        var next = shop.Status == ShopStatus.Active ? ShopStatus.Inactive : ShopStatus.Active;
+        await ShopRepo.SetStatusAsync(shop.Id, next);
+        shop.Status = next;
+        _activeShops = _shops.Count(s => s.Status == ShopStatus.Active);
+    }
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+            : name.Length > 0 ? name[0].ToString().ToUpper() : "?";
+    }
+
+    private static string RequestStatusClass(ShopRequestStatus s) => s switch
+    {
+        ShopRequestStatus.Pending  => "bg-orange-100 text-orange-600",
+        ShopRequestStatus.Approved => "bg-green-100 text-green-700",
+        ShopRequestStatus.Rejected => "bg-red-100 text-brand-red",
+        _ => "bg-surface-container text-text-muted"
+    };
+
+    private static string RequestStatusLabel(ShopRequestStatus s) => s switch
+    {
+        ShopRequestStatus.Pending  => "În așteptare",
+        ShopRequestStatus.Approved => "Aprobat",
+        ShopRequestStatus.Rejected => "Respins",
+        _ => s.ToString()
+    };
+
+    private static string ShopStatusClass(ShopStatus s) => s switch
+    {
+        ShopStatus.Active   => "bg-green-100 text-green-700",
+        ShopStatus.Pending  => "bg-orange-100 text-orange-600",
+        ShopStatus.Inactive => "bg-surface-container text-text-muted",
+        ShopStatus.Rejected => "bg-red-100 text-brand-red",
+        _ => "bg-surface-container text-text-muted"
+    };
+
+    private static string ShopStatusLabel(ShopStatus s) => s switch
+    {
+        ShopStatus.Active   => "Activ",
+        ShopStatus.Pending  => "În așteptare",
+        ShopStatus.Inactive => "Inactiv",
+        ShopStatus.Rejected => "Respins",
+        _ => s.ToString()
+    };
+
+    private static string RoleBadgeClass(string role) => role switch
+    {
+        "Admin"     => "bg-brand-red-light text-brand-red",
+        "ShopOwner" => "bg-secondary-light text-secondary",
+        _           => "bg-surface-container text-text-muted"
+    };
+
+    private static string CategoryLabel(ShopCategory cat) => cat switch
+    {
+        ShopCategory.ServiceAuto => "Service Auto",
+        ShopCategory.PieseAuto   => "Piese Auto",
+        ShopCategory.Spalatorie  => "Spălătorie",
+        ShopCategory.Vopsitorie  => "Vopsitorie",
+        ShopCategory.Vulcanizare => "Vulcanizare",
+        ShopCategory.Tuning      => "Tuning",
+        ShopCategory.Tractari    => "Tractări",
+        ShopCategory.Detailing   => "Detailing",
+        ShopCategory.ITP         => "ITP",
+        ShopCategory.ServiceMoto => "Service Moto",
+        ShopCategory.PieseMoto   => "Piese Moto",
+        ShopCategory.Altele      => "Altele",
+        _ => cat.ToString()
+    };
+}
