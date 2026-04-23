@@ -172,6 +172,9 @@
 </div>
 
 @code {
+    [Parameter, SupplyParameterFromQuery(Name = "q")] public string? Q { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "categorie")] public string? Categorie { get; set; }
+
     private int MinRating = 1;
     private bool OpenNow = false;
     private string SelectedCounty = "Toate județele";
@@ -206,7 +209,38 @@
         "Constanța", "Prahova", "Sibiu", "Mureș", "Bihor"
     ];
 
-    protected override async Task OnInitializedAsync() => await LoadShops();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Q))
+            SearchQuery = Q;
+
+        var preselect = SlugToCategory(Categorie);
+        if (preselect is not null)
+        {
+            var match = Categories.FirstOrDefault(c => c.Value == preselect);
+            if (match is not null) match.Selected = true;
+        }
+
+        await LoadShops();
+    }
+
+    private static ShopCategory? SlugToCategory(string? slug) => slug switch
+    {
+        "service-auto"  => ShopCategory.ServiceAuto,
+        "piese-auto"    => ShopCategory.PieseAuto,
+        "spalatorie"    => ShopCategory.Spalatorie,
+        "vopsitorie"    => ShopCategory.Vopsitorie,
+        "vulcanizare"   => ShopCategory.Vulcanizare,
+        "tuning"        => ShopCategory.Tuning,
+        "tractari"      => ShopCategory.Tractari,
+        "detailing"     => ShopCategory.Detailing,
+        "itp"           => ShopCategory.ITP,
+        "service-moto"  => ShopCategory.ServiceMoto,
+        "piese-moto"    => ShopCategory.PieseMoto,
+        "motociclete"   => ShopCategory.ServiceMoto,
+        "altele"        => ShopCategory.Altele,
+        _               => null
+    };
 
     private async Task LoadShops()
     {
@@ -294,23 +328,6 @@
         if (hour.OpenTime is null || hour.CloseTime is null) return null;
         return hour.OpenTime <= time && time <= hour.CloseTime;
     }
-
-    private static string CategoryDisplayName(ShopCategory cat) => cat switch
-    {
-        ShopCategory.ServiceAuto  => "Service Auto",
-        ShopCategory.PieseAuto    => "Piese Auto",
-        ShopCategory.Spalatorie   => "Spălătorie",
-        ShopCategory.Vopsitorie   => "Vopsitorie",
-        ShopCategory.Vulcanizare  => "Vulcanizare",
-        ShopCategory.Tuning       => "Tuning",
-        ShopCategory.Tractari     => "Tractări",
-        ShopCategory.Detailing    => "Detailing",
-        ShopCategory.ITP          => "ITP",
-        ShopCategory.ServiceMoto  => "Service Moto",
-        ShopCategory.PieseMoto    => "Piese Moto",
-        ShopCategory.Altele       => "Altele",
-        _                         => cat.ToString()
-    };
 
     private class CategoryFilter(string name, ShopCategory value, bool selected)
     {

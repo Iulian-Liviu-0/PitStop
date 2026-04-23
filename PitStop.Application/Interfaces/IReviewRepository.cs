@@ -11,4 +11,5 @@ public interface IReviewRepository
     Task DeleteAsync(int id);
     Task<double> GetAverageRatingAsync(int shopId);
     Task<int> GetTotalCountAsync();
+    Task IncrementUsefulAsync(int reviewId);
 }

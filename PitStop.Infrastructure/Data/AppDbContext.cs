@@ -6,10 +6,8 @@ using PitStop.Infrastructure.Identity;
 
 namespace PitStop.Infrastructure.Data;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser>
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
     public DbSet<Shop> Shops => Set<Shop>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<ShopPhoto> ShopPhotos => Set<ShopPhoto>();
@@ -23,6 +21,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        if (Database.IsNpgsql())
+            modelBuilder.Entity<Review>().ToTable(t =>
+                t.HasCheckConstraint("CK_Review_Rating", "\"Rating\" BETWEEN 1 AND 5"));
+        else if (Database.IsSqlite())
+            modelBuilder.Entity<Review>().ToTable(t =>
+                t.HasCheckConstraint("CK_Review_Rating", "Rating BETWEEN 1 AND 5"));
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

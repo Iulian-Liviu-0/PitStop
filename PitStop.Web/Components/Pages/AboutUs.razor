@@ -1,4 +1,6 @@
 @page "/despre-noi"
+@rendermode InteractiveServer
+@inject IShopRepository ShopRepo
 
 <PageTitle>Despre Noi - PitStop</PageTitle>
 
@@ -52,7 +54,7 @@
     </div>
 </section>
 
-<StatsSection Large="true" />
+<StatsSection Large="true" TotalShops="_statsShopCount" TotalCounties="_statsCountyCount" AvgRating="_statsAvgRating" TotalReviews="_statsReviewCount" />
 
 <!-- ─── HOW WE WORK ─── -->
 <section class="bg-surface-bright py-24 px-6 md:px-12">
@@ -108,3 +110,19 @@
             Title="Ai un service auto sau moto?"
             Subtitle="Alătură-te rețelei PitStop și conectează-te cu mii de clienți din toată România."
             ButtonText="Listează-ți serviciul" />
+
+@code {
+    private int? _statsShopCount;
+    private int? _statsCountyCount;
+    private double? _statsAvgRating;
+    private int? _statsReviewCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var (shopCount, countyCount, avgRating, reviewCount) = await ShopRepo.GetSiteStatsAsync();
+        _statsShopCount = shopCount;
+        _statsCountyCount = countyCount;
+        _statsAvgRating = avgRating;
+        _statsReviewCount = reviewCount;
+    }
+}

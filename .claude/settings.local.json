@@ -1,9 +1,13 @@
 {
+  "env": {
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "1"
+  },
   "permissions": {
     "allow": [
-      "Bash(xargs grep *)",
-      "Bash(findstr /i \"contact accordion FAQ details\")",
-      "Bash(dotnet build *)"
+      "Skill(update-config)",
+      "Skill(claude-md-management:revise-claude-md)",
+      "Bash(dotnet build *)",
+      "Bash(xargs grep *)"
     ]
   }
 }

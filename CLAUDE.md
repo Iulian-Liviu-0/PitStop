@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code when working with this repository.
 
+## Pending work (not yet implemented)
+
+- **Email sending** — When an admin approves a shop request, the owner should
+  receive an automated email with an account setup link. No mailer is wired yet.
+  Recommended: use `MailKit` + `MimeKit` with SMTP (or SendGrid/Mailgun for prod).
+  The trigger point is `Admin/Dashboard.razor` when `ApproveRequestAsync` is called.
+- **Google OAuth** — The login button is UI-only. To wire it up, register a
+  Google OAuth app, add `AddGoogle(...)` in `Program.cs`, and handle the callback.
+  The callback should create/link the ASP.NET Identity user and sign them in.
+
 ## What is PitStop?
 
 PitStop is a Romanian automotive directory web app. Users can find and review
@@ -20,7 +30,7 @@ The app is in Romanian and targets the Romanian market only.
   open/closed status, short description
 
 ### 🏪 Shop Profiles
-- Full profile page with photo gallery
+- Full profile page with photo gallery (lightbox with keyboard navigation)
 - Services list with name, description, and price range per service
 - Opening hours per day of week (open/closed + time range)
 - Contact info: phone, email, website, address
@@ -28,6 +38,7 @@ The app is in Romanian and targets the Romanian market only.
 - Customer reviews section with star rating, text, author, and date
 - Social share links (WhatsApp, Facebook, copy link)
 - Category badge and verified status indicator
+- Report a problem modal
 
 ### 👤 User Accounts
 - Register with email and password
@@ -56,6 +67,7 @@ The app is in Romanian and targets the Romanian market only.
 - View and respond to customer reviews
 - See profile view statistics
 - Manage contact details
+- Manage brand/make associations
 
 ### 🔐 Admin Dashboard
 - View all pending shop requests in a table
@@ -86,7 +98,7 @@ The app is in Romanian and targets the Romanian market only.
 | UI | Blazor Server, Interactive Server render mode |
 | CSS | Tailwind CSS v4 |
 | ORM | EF Core 10 |
-| Database | PostgreSQL (local dev) / Supabase (prod) |
+| Database | PostgreSQL / SQLite (dev fallback) / Supabase (prod) |
 | Auth | ASP.NET Core Identity, cookie-based |
 | Icons | Google Material Symbols |
 | Fonts | Manrope (headings), Inter (body) |
@@ -142,6 +154,7 @@ dotnet ef database update --project PitStop.Infrastructure --startup-project Pit
 - All pages in `PitStop.Web/Components/Pages/`
 - Layout in `PitStop.Web/Components/Layout/` — NavBar, Footer, MainLayout
 - Shared components in `PitStop.Web/Components/Shared/`
+- Shared utilities in `PitStop.Web/Utilities/` — `DisplayHelpers.cs`
 - Tailwind theme in `wwwroot/css/app.css` → compiled to `wwwroot/css/app.min.css`
 
 Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
@@ -158,6 +171,18 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 | `secondary` / `secondary-light` | `#5d5c74` / `#e8e8f8` | Secondary icon circles |
 
 **Never use raw hex values in components** — always use the token class (e.g. `text-brand-red`, `bg-surface-container`).
+
+### Shared Utilities
+
+`PitStop.Web/Utilities/DisplayHelpers.cs` — static class, imported globally via
+`@using static PitStop.Web.Utilities.DisplayHelpers` in `_Imports.razor`.
+
+| Method | Purpose |
+|---|---|
+| `CategoryDisplayName(ShopCategory)` | Maps enum to Romanian display string |
+| `Initials(string name)` | Extracts 1–2 initials from a full name |
+
+**Do not copy these into individual pages** — they are available everywhere via `_Imports.razor`.
 
 ### Pages
 
@@ -179,13 +204,13 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 ### Page notes
 
 - **`Home.razor`** — loads featured shops via `IShopRepository.GetFeaturedAsync(6)`. Hero, category grid, how-it-works section, CTA all wired.
-- **`Search.razor`** — fully wired to `IShopRepository.SearchAsync`. Filters: keyword, category, county, min rating, open now. Pagination (6/page). Sort by recommended/rating/review count.
-- **`ShopProfile.razor`** — loads shop by `Id` via `IShopRepository.GetByIdAsync`. Shows hero banner, about, services, gallery, paginated reviews with rating breakdown, sticky contact card, hours, Google Maps link, and top 3 similar shops (same category).
-- **`Auth/Login.razor`** — single page with tab switching (login/register). `[SupplyParameterFromQuery] Tab` activates the register tab when navigating from `/auth/register`. Login calls `SignInManager.PasswordSignInAsync`; register calls `UserManager.CreateAsync` + `AddToRoleAsync("User")` + `SignInAsync`. Both navigate with `forceLoad: true` on success. Google OAuth button is UI-only.
-- **`Contact.razor`** — Blazor form with `@onsubmit` + success state. FAQ accordion driven by `OpenFaq` (int?) — one item open at a time. Form data is saved to DB via `IShopRequestRepository.CreateAsync` when the subject is the listing request option.
+- **`Search.razor`** — fully wired to `IShopRepository.SearchAsync`. Filters: keyword, category, county, min rating, open now. Pagination (6/page). Sort by recommended/rating/review count. Accepts `?q=` and `?categorie=` query params from Home category grid links.
+- **`ShopProfile.razor`** — loads shop by `Id` via `IShopRepository.GetByIdAsync`. Shows hero banner, about, services, gallery with lightbox, paginated reviews with rating breakdown and useful votes, sticky contact card, hours, Google Maps link, top 3 similar shops (same category), share popover (WhatsApp/Facebook/copy), report modal, favorites toggle. After loading the main shop, `IsFavoriteAsync` and `SearchAsync` (for similar shops) run in parallel via `Task.WhenAll`.
+- **`Auth/Login.razor`** — single page with tab switching (login/register). `[SupplyParameterFromQuery] Tab` activates the register tab. Supports `?returnUrl=` query param — passes it as a hidden field to `/auth/do-login`, which redirects there after successful login (local paths only, open-redirect protected). Login calls `SignInManager.PasswordSignInAsync`; register calls `UserManager.CreateAsync` + `AddToRoleAsync("User")` + `SignInAsync`. Google OAuth button is UI-only.
+- **`Contact.razor`** — Blazor form with `@onsubmit` + success/error state. All four fields (name, email, subject, message) are validated before submit; shows inline error on failure. FAQ accordion driven by `OpenFaq` (int?) — one item open at a time. Form data is saved to DB via `IShopRequestRepository.CreateAsync` only when subject is `"listing"` — other subjects show the success message but have no backend handler (email sending not yet implemented).
 - **`AboutUs.razor`** — static page: mission/vision, process steps, hardcoded team member cards (Alexandru Popescu/CEO, Mihai Ionescu/Lead Dev, Elena Radu/Community Manager), CTA.
-- **`User/Dashboard.razor`** — favorites list, review history, profile settings (name/email), password change. Auth guard in `OnInitializedAsync` via `AuthenticationStateProvider`.
-- **`Shop/Dashboard.razor`** — profile editing, services CRUD, hours management (per day), reviews viewing. Uses internal `HourRow` class with `string OpenTime`/`CloseTime` (format `"HH:mm"`). `<input type="time">` uses `value`/`@onchange` instead of `@bind` — Blazor infers `DateTime` for time inputs when using `@bind` on string properties.
+- **`User/Dashboard.razor`** — favorites list, review history (with inline edit), profile settings (name/email), password change. Auth guard in `OnInitializedAsync` via `AuthenticationStateProvider`.
+- **`Shop/Dashboard.razor`** — profile editing (including brands), services CRUD, hours management (per day), photos tab (upload/delete/set cover), reviews viewing. Uses internal `HourRow` class with `string OpenTime`/`CloseTime` (format `"HH:mm"`). `<input type="time">` uses `value`/`@onchange` instead of `@bind` — Blazor infers `DateTime` for time inputs when using `@bind` on string properties.
 - **`Admin/Dashboard.razor`** — pending shop requests table (approve/reject with note), all shops list (activate/deactivate), all users list, overview stats. Reject panel toggled via `_rejectingId`.
 
 ### Shared Components
@@ -206,6 +231,7 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 - `ShopCardModel` is the unified data model for shop data across all pages — do not define page-local shop records.
 - **`<input type="time">` with a `string` property** — do NOT use `@bind` (Blazor infers `DateTime`). Use `value="@field" @onchange="e => field = e.Value?.ToString() ?? string.Empty"` instead.
 - **Inline `@onclick` lambdas with double quotes** — if the lambda body contains `""` (empty string), wrap the attribute in single quotes: `@onclick='() => { x = y ?? ""; }'`.
+- **`CategoryDisplayName` and `Initials`** — do NOT copy these into individual pages; use the shared `DisplayHelpers` class available via `_Imports.razor`.
 
 ### Auth conventions
 
@@ -214,10 +240,19 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 - **Do NOT use `@attribute [Authorize]` on Blazor pages** — without `AuthorizeRouteView`, the attribute is not enforced and causes errors. Guard pages manually in `OnInitializedAsync` via `AuthenticationStateProvider`.
 - **NavBar** reads auth state via injected `AuthenticationStateProvider` in `OnInitializedAsync`. After login/register/logout, always use `NavigateTo(..., forceLoad: true)` so the NavBar re-initializes with the new auth state.
 - **`_Imports.razor`** already has `@using Microsoft.AspNetCore.Authorization`, `@using Microsoft.AspNetCore.Identity`, `@using PitStop.Infrastructure.Identity` — no need to repeat these in individual components.
+- **Getting the user's display name** — `state.User.Identity.Name` returns the username/email, not the full name. Inject `UserManager<ApplicationUser>` and call `await UserManager.FindByIdAsync(userId)` to get `FullName`. If `IsAuthenticated` is true the NameIdentifier claim is always present, so no null-guard on the userId is needed before calling `FindByIdAsync`.
+
+### Client-side JS
+
+`wwwroot/js/app.js` — loaded in `App.razor` before `blazor.web.js`.
+
+| Function | Purpose |
+|---|---|
+| `copyToClipboard(text)` | Wraps `navigator.clipboard.writeText`, called from `ShopProfile.razor` via `IJSRuntime` |
 
 ## Data
 
-All public pages are wired to real repository calls. Hardcoded data remains only in `AboutUs.razor` (team members) and `StatsSection.razor` (stats numbers).
+All public pages are wired to real repository calls. Hardcoded data remains only in `AboutUs.razor` (team members).
 
 ### Connection string
 
@@ -227,10 +262,14 @@ All public pages are wired to real repository calls. Hardcoded data remains only
 ```
 `appsettings.Development.json` overrides the password (`Password=juliandev`) and enables `Microsoft.EntityFrameworkCore.Database.Command: Information` to log SQL.
 
+### SQLite dev fallback
+
+Set `"DatabaseProvider": "Sqlite"` in `appsettings.Development.json` to use SQLite instead of PostgreSQL. The DB file (`pitstop_dev.db`) is created automatically via `EnsureCreated()` on startup — no migrations needed. Remove the key (or set to anything else) to switch back to PostgreSQL. Never use `EnsureCreated()` in production; it doesn't track schema evolution.
+
 ### Program.cs registration order
 
 1. `AddRazorComponents` + `AddInteractiveServerComponents`
-2. `AddDbContext<AppDbContext>` with Npgsql
+2. `AddDbContextFactory<AppDbContext>` — provider selected by `DatabaseProvider` config key (`"Sqlite"` or default Postgres)
 3. `AddIdentity<ApplicationUser, IdentityRole>` → `AddEntityFrameworkStores<AppDbContext>` → `AddDefaultTokenProviders`
    - Password: `RequireDigit=true`, `MinimumLength=8`, `RequireUppercase=false`
    - User: `RequireUniqueEmail=true`
@@ -243,6 +282,12 @@ All public pages are wired to real repository calls. Hardcoded data remains only
 `UseStaticFiles` → `UseAuthentication` → `UseAuthorization` → `UseAntiforgery` → `MapStaticAssets` → `MapRazorComponents`
 
 `UseStaticFiles` is before auth so that `wwwroot/uploads/` is public without login.
+
+### Minimal API endpoints
+
+`/auth/do-login` (POST) — reads `email`, `password`, `rememberMe`, `returnUrl` from form. On success, redirects to `returnUrl` if it is a local path (starts with `/`), otherwise redirects to `/`. Prevents open redirect by rejecting non-local paths.
+
+`/auth/do-register` (POST) — creates `ApplicationUser`, assigns `User` role, signs in, redirects to `/`.
 
 ### Role seeding
 
@@ -276,6 +321,7 @@ Notes:
 - `OwnerId` on `Shop` is a string FK to `ApplicationUser` (defined in Infrastructure)
 - `UserId` on `Review` and `FavoriteShop` are string FKs — no navigation to `ApplicationUser` in Domain
 - `ShopRequest` does not inherit `BaseEntity` because it has no `UpdatedAt`
+- `AverageRating` and `ReviewCount` on `Shop` are denormalized — kept in sync by calling `ShopRepository.RecalcRatingAsync(shopId)` after any review create/update/delete
 
 ## Infrastructure
 
@@ -289,14 +335,14 @@ DbSets: `Shops`, `Reviews`, `ShopPhotos`, `ShopServices`, `ShopHours`, `ShopRequ
 
 `SaveChangesAsync` automatically sets `CreatedAt` + `UpdatedAt` on `BaseEntity` entries (Added sets both; Modified sets only `UpdatedAt`).
 
-`OnModelCreating` calls `base` first, then `ApplyConfigurationsFromAssembly` — all configurations are picked up automatically.
+`OnModelCreating` calls `base` first, then `ApplyConfigurationsFromAssembly` — all configurations are picked up automatically. It also applies the `Rating BETWEEN 1 AND 5` check constraint conditionally — quoted `"Rating"` for Postgres, unquoted for SQLite. Do NOT put provider-specific SQL inside `IEntityTypeConfiguration` — it has no access to `Database.IsNpgsql()` / `Database.IsSqlite()`.
 
 ### EF Core Configurations (`Data/Configurations/`)
 
 | File | Entity | Key rules |
 |---|---|---|
 | `ShopConfiguration` | `Shop` | Required + max lengths; index on `City`, index on `Category`; `OwnerId` max 450 |
-| `ReviewConfiguration` | `Review` | Check constraint `Rating BETWEEN 1 AND 5`; unique index on `(ShopId, UserId)` |
+| `ReviewConfiguration` | `Review` | Unique index on `(ShopId, UserId)` — one review per user per shop; check constraint in `AppDbContext.OnModelCreating` |
 | `ShopServiceConfiguration` | `ShopService` | `PriceMin` + `PriceMax` precision `(10, 2)` |
 | `ShopRequestConfiguration` | `ShopRequest` | Required + max lengths for all string fields |
 | `FavoriteShopConfiguration` | `FavoriteShop` | Unique index on `(UserId, ShopId)` |
@@ -305,13 +351,15 @@ DbSets: `Shops`, `Reviews`, `ShopPhotos`, `ShopServices`, `ShopHours`, `ShopRequ
 
 ### Repositories (`Repositories/`)
 
-Interfaces live in `PitStop.Application/Interfaces/`. Implementations take `AppDbContext` via primary constructor.
+Interfaces live in `PitStop.Application/Interfaces/`. Implementations take `IDbContextFactory<AppDbContext>` via primary constructor, plus `ILogger<T>`. All methods use `await factory.CreateDbContextAsync()` — never the synchronous `factory.CreateDbContext()`.
+
+**Logging levels:** use `LogInformation` for high-value writes (shop create, status change, review create/delete, shop request create/update); use `LogDebug` for frequent or low-value operations (favorite add/remove, rating recalc).
 
 | Interface | Implementation | Notes |
 |---|---|---|
 | `IShopRepository` | `ShopRepository` | `SearchAsync` builds `IQueryable` pipeline; `openNow` maps .NET `DayOfWeek` (Sunday=0) → project convention (Monday=0) via `((int)dow + 6) % 7` |
-| `IReviewRepository` | `ReviewRepository` | `GetAverageRatingAsync` queries live from DB; `DeleteAsync` uses `ExecuteDeleteAsync` |
-| `IShopRequestRepository` | `ShopRequestRepository` | `GetPendingAsync` ordered by `CreatedAt ASC` (oldest first for admin queue) |
+| `IReviewRepository` | `ReviewRepository` | `IncrementUsefulAsync` uses `ExecuteUpdateAsync` for atomic increment; `DeleteAsync` uses `ExecuteDeleteAsync` |
+| `IShopRequestRepository` | `ShopRequestRepository` | `GetPendingAsync` ordered by `CreatedAt ASC` (oldest first for FIFO admin queue) |
 | `IFavoriteShopRepository` | `FavoriteShopRepository` | `AddAsync` is idempotent (no-op if already exists); `RemoveAsync` uses `ExecuteDeleteAsync` |
 | `IFileStorage` | `LocalFileStorage` | Saves to `wwwroot/uploads/<folder>/`, returns `/uploads/<folder>/<file>` URL |
 
@@ -327,12 +375,17 @@ Interfaces live in `PitStop.Application/Interfaces/`. Implementations take `AppD
 - `AddServiceAsync`, `UpdateServiceAsync`, `DeleteServiceAsync`
 - `UpsertHoursAsync(shopId, hours)` — replaces all hours for a shop
 - `SetStatusAsync(shopId, status)`
+- `GetSiteStatsAsync()` — returns `(ShopCount, CountyCount, AvgRating, ReviewCount)` for StatsSection
+- `RecalcRatingAsync(shopId)` — single GroupBy query to recompute `AverageRating` + `ReviewCount` on Shop; call after any review write
+- `AddPhotoAsync(photo)`, `DeletePhotoAsync(photoId)`, `SetCoverImageAsync(shopId, url?)`
+- `AddBrandAsync(brand)`, `DeleteBrandAsync(brandId)`
 
 #### IReviewRepository methods
 - `GetByShopIdAsync(shopId, page, pageSize)` — paginated
-- `GetByUserIdAsync(userId)` — user's own reviews
+- `GetByUserIdAsync(userId)` — user's own reviews, includes Shop navigation
 - `CreateAsync`, `UpdateAsync`, `DeleteAsync`
 - `GetAverageRatingAsync(shopId)`, `GetTotalCountAsync()`
+- `IncrementUsefulAsync(reviewId)` — atomic `UsefulCount + 1` via `ExecuteUpdateAsync`
 
 #### IFavoriteShopRepository methods
 - `GetByUserIdAsync(userId)` — with shop + photos eager-loaded
@@ -349,5 +402,3 @@ Uploaded files are stored in `wwwroot/uploads/{folder}/` with a `Guid`-prefixed 
 
 UI designs are generated in Google Stitch then ported to Blazor manually.
 Reference prototype: `wwwroot/prototypes/homepage.html`
-
-claude --resume 8dbc8f05-5769-48b1-aec1-ad56a1673126

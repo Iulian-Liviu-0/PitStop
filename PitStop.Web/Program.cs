@@ -16,8 +16,16 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // ─── Database ─────────────────────────────────────────────────────────────────
+var dbProvider = builder.Configuration.GetValue<string>("DatabaseProvider") ?? "Postgres";
+
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (dbProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+        options.UseSqlite(builder.Configuration.GetConnectionString("SqliteConnection")
+            ?? "Data Source=pitstop_dev.db");
+    else
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 // ─── Identity ─────────────────────────────────────────────────────────────────
 builder.Services
@@ -57,6 +65,14 @@ builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
 // ─── Build ────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
+if (dbProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+    await using var db = await factory.CreateDbContextAsync();
+    await db.Database.EnsureCreatedAsync();
+}
+
 await SeedRolesAsync(app.Services);
 await SeedAdminAsync(app.Services);
 await SeedUsersAsync(app.Services);
@@ -93,12 +109,18 @@ app.MapPost("/auth/do-login", async (HttpContext ctx, SignInManager<ApplicationU
     var email = form["email"].ToString();
     var password = form["password"].ToString();
     var rememberMe = form["rememberMe"].ToString() == "true";
+    var returnUrl = form["returnUrl"].ToString();
 
     if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         return Results.Redirect("/auth/login?error=empty");
 
     var result = await signInMgr.PasswordSignInAsync(email, password, rememberMe, lockoutOnFailure: false);
-    return result.Succeeded ? Results.Redirect("/") : Results.Redirect("/auth/login?error=invalid");
+    if (!result.Succeeded)
+        return Results.Redirect("/auth/login?error=invalid");
+
+    // Redirect to returnUrl only if it's a local path (prevent open redirect)
+    var destination = !string.IsNullOrWhiteSpace(returnUrl) && returnUrl.StartsWith('/') ? returnUrl : "/";
+    return Results.Redirect(destination);
 });
 
 app.MapPost("/auth/do-register", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, SignInManager<ApplicationUser> signInMgr) =>

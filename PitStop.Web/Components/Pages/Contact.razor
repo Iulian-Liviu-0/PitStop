@@ -65,6 +65,13 @@
                                   class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main placeholder-text-muted focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors resize-none"></textarea>
                     </div>
 
+                    @if (SubmitError)
+                    {
+                        <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                            <span class="material-symbols-outlined text-lg">error</span>
+                            Completează toate câmpurile înainte de a trimite mesajul.
+                        </div>
+                    }
                     @if (SubmitSuccess)
                     {
                         <div class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
@@ -179,13 +186,19 @@
     private string FormSubject { get; set; } = string.Empty;
     private string FormMessage { get; set; } = string.Empty;
     private bool SubmitSuccess { get; set; }
+    private bool SubmitError { get; set; }
 
     private int? OpenFaq { get; set; }
 
     private async Task HandleSubmit()
     {
-        if (string.IsNullOrWhiteSpace(FormName) || string.IsNullOrWhiteSpace(FormEmail))
+        SubmitError = false;
+        if (string.IsNullOrWhiteSpace(FormName) || string.IsNullOrWhiteSpace(FormEmail) ||
+            string.IsNullOrWhiteSpace(FormSubject) || string.IsNullOrWhiteSpace(FormMessage))
+        {
+            SubmitError = true;
             return;
+        }
 
         if (FormSubject == "listing")
         {
@@ -203,6 +216,7 @@
         }
 
         SubmitSuccess = true;
+        SubmitError = false;
         FormName = string.Empty;
         FormEmail = string.Empty;
         FormSubject = string.Empty;

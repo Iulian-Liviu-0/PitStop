@@ -39,7 +39,7 @@
             </button>
         </div>
 
-        <StatsSection />
+        <StatsSection TotalShops="_statsShopCount" TotalCounties="_statsCountyCount" AvgRating="_statsAvgRating" TotalReviews="_statsReviewCount" />
     </div>
 
     <!-- Hero image -->
@@ -143,6 +143,10 @@
 @code {
     private string SearchQuery = string.Empty;
     private List<ShopCardModel> FeaturedShops = [];
+    private int? _statsShopCount;
+    private int? _statsCountyCount;
+    private double? _statsAvgRating;
+    private int? _statsReviewCount;
 
     private void NavigateToSearch() =>
         Nav.NavigateTo($"/servicii?q={Uri.EscapeDataString(SearchQuery)}");
@@ -154,8 +158,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var shops = await ShopRepo.GetFeaturedAsync(6);
-        FeaturedShops = shops.Select(MapToCard).ToList();
+        var shopsTask = ShopRepo.GetFeaturedAsync(6);
+        var statsTask = ShopRepo.GetSiteStatsAsync();
+        await Task.WhenAll(shopsTask, statsTask);
+        FeaturedShops = shopsTask.Result.Select(MapToCard).ToList();
+        (_statsShopCount, _statsCountyCount, _statsAvgRating, _statsReviewCount) = statsTask.Result;
     }
 
     private static ShopCardModel MapToCard(Domain.Entities.Shop s) => new(
@@ -168,23 +175,6 @@
         ImageUrl: s.Photos.FirstOrDefault()?.Url ?? "",
         ReviewCount: s.ReviewCount
     );
-
-    private static string CategoryDisplayName(ShopCategory cat) => cat switch
-    {
-        ShopCategory.ServiceAuto  => "Service Auto",
-        ShopCategory.PieseAuto    => "Piese Auto",
-        ShopCategory.Spalatorie   => "Spălătorie",
-        ShopCategory.Vopsitorie   => "Vopsitorie",
-        ShopCategory.Vulcanizare  => "Vulcanizare",
-        ShopCategory.Tuning       => "Tuning",
-        ShopCategory.Tractari     => "Tractări",
-        ShopCategory.Detailing    => "Detailing",
-        ShopCategory.ITP          => "ITP",
-        ShopCategory.ServiceMoto  => "Service Moto",
-        ShopCategory.PieseMoto    => "Piese Moto",
-        ShopCategory.Altele       => "Altele",
-        _                         => cat.ToString()
-    };
 
     private record CategoryItem(string Name, string Icon, string Slug);
     private record StepItem(int Number, string Icon, string Title, string Description);

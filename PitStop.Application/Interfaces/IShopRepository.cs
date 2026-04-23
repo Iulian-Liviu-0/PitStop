@@ -27,4 +27,11 @@ public interface IShopRepository
     Task DeleteServiceAsync(int id);
     Task UpsertHoursAsync(int shopId, List<ShopHour> hours);
     Task SetStatusAsync(int shopId, ShopStatus status);
+    Task<(int ShopCount, int CountyCount, double AvgRating, int ReviewCount)> GetSiteStatsAsync();
+    Task RecalcRatingAsync(int shopId);
+    Task<ShopPhoto> AddPhotoAsync(ShopPhoto photo);
+    Task DeletePhotoAsync(int photoId);
+    Task SetCoverImageAsync(int shopId, string? url);
+    Task<ShopBrand> AddBrandAsync(ShopBrand brand);
+    Task DeleteBrandAsync(int brandId);
 }
