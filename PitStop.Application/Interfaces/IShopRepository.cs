@@ -34,4 +34,5 @@ public interface IShopRepository
     Task SetCoverImageAsync(int shopId, string? url);
     Task<ShopBrand> AddBrandAsync(ShopBrand brand);
     Task DeleteBrandAsync(int brandId);
+    Task UpdatePhotoOrderAsync(List<(int PhotoId, int DisplayOrder)> updates);
 }

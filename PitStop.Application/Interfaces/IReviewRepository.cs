@@ -12,4 +12,5 @@ public interface IReviewRepository
     Task<double> GetAverageRatingAsync(int shopId);
     Task<int> GetTotalCountAsync();
     Task IncrementUsefulAsync(int reviewId);
+    Task SetOwnerResponseAsync(int reviewId, string? response);
 }

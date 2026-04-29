@@ -253,6 +253,14 @@ public class ShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<Sho
         await ctx.ShopBrands.Where(b => b.Id == brandId).ExecuteDeleteAsync();
     }
 
+    public async Task UpdatePhotoOrderAsync(List<(int PhotoId, int DisplayOrder)> updates)
+    {
+        await using var ctx = await factory.CreateDbContextAsync();
+        foreach (var (photoId, displayOrder) in updates)
+            await ctx.ShopPhotos.Where(p => p.Id == photoId)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.DisplayOrder, displayOrder));
+    }
+
     public async Task RecalcRatingAsync(int shopId)
     {
         await using var ctx = await factory.CreateDbContextAsync();
