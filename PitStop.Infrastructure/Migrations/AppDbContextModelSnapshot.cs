@@ -309,6 +309,9 @@ namespace PitStop.Infrastructure.Migrations
                     b.Property<int>("ReviewCount")
                         .HasColumnType("integer");
 
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Sector")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");

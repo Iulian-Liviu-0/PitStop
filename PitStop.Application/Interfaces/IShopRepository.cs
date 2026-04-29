@@ -35,4 +35,5 @@ public interface IShopRepository
     Task<ShopBrand> AddBrandAsync(ShopBrand brand);
     Task DeleteBrandAsync(int brandId);
     Task UpdatePhotoOrderAsync(List<(int PhotoId, int DisplayOrder)> updates);
+    Task IncrementViewCountAsync(int shopId);
 }

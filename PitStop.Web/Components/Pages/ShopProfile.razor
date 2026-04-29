@@ -704,6 +704,8 @@ else
         var shop = await ShopRepo.GetByIdAsync(Id);
         if (shop is null) { Nav.NavigateTo("/not-found"); return; }
 
+        _ = ShopRepo.IncrementViewCountAsync(Id);
+
         // .NET DayOfWeek is Sunday=0; project convention is Monday=0, so shift by 6
         var today = ((int)DateTime.UtcNow.DayOfWeek + 6) % 7;
         var (isOpen, closingTime) = GetOpenStatus(shop.Hours, today);

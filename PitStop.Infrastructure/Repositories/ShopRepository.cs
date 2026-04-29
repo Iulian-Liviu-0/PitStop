@@ -261,6 +261,13 @@ public class ShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<Sho
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.DisplayOrder, displayOrder));
     }
 
+    public async Task IncrementViewCountAsync(int shopId)
+    {
+        await using var ctx = await factory.CreateDbContextAsync();
+        await ctx.Shops.Where(s => s.Id == shopId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.ViewCount, p => p.ViewCount + 1));
+    }
+
     public async Task RecalcRatingAsync(int shopId)
     {
         await using var ctx = await factory.CreateDbContextAsync();

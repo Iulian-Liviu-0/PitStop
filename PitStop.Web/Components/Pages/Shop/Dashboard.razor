@@ -66,6 +66,31 @@ else
         @if (_tab == "profile")
         {
             <div class="max-w-2xl">
+                <!-- Stats row -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white rounded-xl border border-border-light p-4 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-brand-red text-2xl">visibility</span>
+                        <div>
+                            <p class="text-xs text-text-muted">Vizualizări profil</p>
+                            <p class="font-black text-xl text-text-main" style="font-family: Manrope, sans-serif;">@_shop!.ViewCount</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-border-light p-4 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-brand-red text-2xl">star</span>
+                        <div>
+                            <p class="text-xs text-text-muted">Rating mediu</p>
+                            <p class="font-black text-xl text-text-main" style="font-family: Manrope, sans-serif;">@_shop.AverageRating.ToString("0.0")</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-border-light p-4 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-brand-red text-2xl">rate_review</span>
+                        <div>
+                            <p class="text-xs text-text-muted">Recenzii</p>
+                            <p class="font-black text-xl text-text-main" style="font-family: Manrope, sans-serif;">@_reviewTotal</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
                     <h2 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Informații profil</h2>
 

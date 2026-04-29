@@ -22,6 +22,7 @@ public class Shop : BaseEntity
 
     public double AverageRating { get; set; }
     public int ReviewCount { get; set; }
+    public int ViewCount { get; set; }
 
     // Navigation properties
     public ICollection<Review> Reviews { get; set; } = [];

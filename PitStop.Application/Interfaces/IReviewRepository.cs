@@ -13,4 +13,5 @@ public interface IReviewRepository
     Task<int> GetTotalCountAsync();
     Task IncrementUsefulAsync(int reviewId);
     Task SetOwnerResponseAsync(int reviewId, string? response);
+    Task<(List<Review> Items, int TotalCount)> GetAllAsync(int page, int pageSize);
 }

@@ -6,6 +6,7 @@ using PitStop.Domain.Enums;
 using PitStop.Infrastructure.Data;
 using PitStop.Infrastructure.Identity;
 using PitStop.Infrastructure.Repositories;
+using PitStop.Infrastructure.Services;
 using PitStop.Infrastructure.Storage;
 using PitStop.Web.Components;
 
@@ -48,6 +49,20 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+// ─── External Auth (Google) ───────────────────────────────────────────────────
+var googleClientId     = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && googleClientId != "YOUR_GOOGLE_CLIENT_ID")
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId     = googleClientId;
+            options.ClientSecret = googleClientSecret!;
+            options.CallbackPath = "/auth/google-callback";
+        });
+}
+
 // ─── Authorization Policies ───────────────────────────────────────────────────
 builder.Services.AddAuthorization(options =>
 {
@@ -61,6 +76,7 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IShopRequestRepository, ShopRequestRepository>();
 builder.Services.AddScoped<IFavoriteShopRepository, FavoriteShopRepository>();
 builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
 // ─── Build ────────────────────────────────────────────────────────────────────
 var app = builder.Build();
@@ -100,6 +116,73 @@ app.MapRazorComponents<App>()
 app.MapPost("/auth/do-logout", async (HttpContext ctx, SignInManager<ApplicationUser> signInMgr) =>
 {
     await signInMgr.SignOutAsync();
+    return Results.Redirect("/");
+});
+
+app.MapPost("/auth/do-set-password", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, SignInManager<ApplicationUser> signInMgr) =>
+{
+    var form           = await ctx.Request.ReadFormAsync();
+    var userId         = form["userId"].ToString();
+    var token          = form["token"].ToString();
+    var password       = form["password"].ToString();
+    var confirmPassword = form["confirmPassword"].ToString();
+
+    if (password != confirmPassword)
+        return Results.Redirect($"/auth/set-password?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}&err=mismatch");
+
+    var user = await userMgr.FindByIdAsync(userId);
+    if (user is null)
+        return Results.Redirect($"/auth/set-password?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}&err=invalid");
+
+    var result = await userMgr.ResetPasswordAsync(user, token, password);
+    if (!result.Succeeded)
+    {
+        var errCode = result.Errors.Any(e => e.Code.Contains("Password")) ? "weak" : "invalid";
+        return Results.Redirect($"/auth/set-password?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}&err={errCode}");
+    }
+
+    await signInMgr.SignInAsync(user, isPersistent: false);
+    return Results.Redirect("/shop/dashboard");
+});
+
+app.MapGet("/auth/google-login", (HttpContext ctx) =>
+{
+    var props = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+    {
+        RedirectUri = "/auth/google-callback"
+    };
+    return Results.Challenge(props, ["Google"]);
+});
+
+app.MapGet("/auth/google-callback", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, SignInManager<ApplicationUser> signInMgr) =>
+{
+    var info = await signInMgr.GetExternalLoginInfoAsync();
+    if (info is null)
+        return Results.Redirect("/auth/login?error=invalid");
+
+    // Try to sign in with existing external login link
+    var signInResult = await signInMgr.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
+    if (signInResult.Succeeded)
+        return Results.Redirect("/");
+
+    // No existing link — find or create user by email
+    var email = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+    var name  = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? email ?? "Utilizator";
+    if (string.IsNullOrWhiteSpace(email))
+        return Results.Redirect("/auth/login?error=invalid");
+
+    var user = await userMgr.FindByEmailAsync(email);
+    if (user is null)
+    {
+        user = new ApplicationUser { UserName = email, Email = email, FullName = name, EmailConfirmed = true, CreatedAt = DateTime.UtcNow };
+        var createResult = await userMgr.CreateAsync(user);
+        if (!createResult.Succeeded)
+            return Results.Redirect("/auth/login?error=invalid");
+        await userMgr.AddToRoleAsync(user, "User");
+    }
+
+    await userMgr.AddLoginAsync(user, info);
+    await signInMgr.SignInAsync(user, isPersistent: false);
     return Results.Redirect("/");
 });
 
