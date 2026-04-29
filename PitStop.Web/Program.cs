@@ -6,6 +6,7 @@ using PitStop.Domain.Enums;
 using PitStop.Infrastructure.Data;
 using PitStop.Infrastructure.Identity;
 using PitStop.Infrastructure.Repositories;
+using PitStop.Infrastructure.Services;
 using PitStop.Infrastructure.Storage;
 using PitStop.Web.Components;
 
@@ -48,6 +49,20 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+// ─── External Auth (Google) ───────────────────────────────────────────────────
+var googleClientId     = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && googleClientId != "YOUR_GOOGLE_CLIENT_ID")
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId     = googleClientId;
+            options.ClientSecret = googleClientSecret!;
+            options.CallbackPath = "/auth/google-callback";
+        });
+}
+
 // ─── Authorization Policies ───────────────────────────────────────────────────
 builder.Services.AddAuthorization(options =>
 {
@@ -61,6 +76,7 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IShopRequestRepository, ShopRequestRepository>();
 builder.Services.AddScoped<IFavoriteShopRepository, FavoriteShopRepository>();
 builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
 // ─── Build ────────────────────────────────────────────────────────────────────
 var app = builder.Build();
@@ -100,6 +116,138 @@ app.MapRazorComponents<App>()
 app.MapPost("/auth/do-logout", async (HttpContext ctx, SignInManager<ApplicationUser> signInMgr) =>
 {
     await signInMgr.SignOutAsync();
+    return Results.Redirect("/");
+});
+
+app.MapPost("/auth/do-set-password", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, SignInManager<ApplicationUser> signInMgr) =>
+{
+    var form           = await ctx.Request.ReadFormAsync();
+    var userId         = form["userId"].ToString();
+    var token          = form["token"].ToString();
+    var password       = form["password"].ToString();
+    var confirmPassword = form["confirmPassword"].ToString();
+
+    if (password != confirmPassword)
+        return Results.Redirect($"/auth/set-password?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}&err=mismatch");
+
+    var user = await userMgr.FindByIdAsync(userId);
+    if (user is null)
+        return Results.Redirect($"/auth/set-password?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}&err=invalid");
+
+    var result = await userMgr.ResetPasswordAsync(user, token, password);
+    if (!result.Succeeded)
+    {
+        var errCode = result.Errors.Any(e => e.Code.Contains("Password")) ? "weak" : "invalid";
+        return Results.Redirect($"/auth/set-password?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}&err={errCode}");
+    }
+
+    await signInMgr.SignInAsync(user, isPersistent: false);
+    return Results.Redirect("/shop/dashboard");
+});
+
+app.MapGet("/auth/google-login", (HttpContext ctx) =>
+{
+    var props = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+    {
+        RedirectUri = "/auth/google-callback"
+    };
+    return Results.Challenge(props, ["Google"]);
+});
+
+app.MapGet("/sitemap.xml", async (HttpContext ctx, IShopRepository shopRepo) =>
+{
+    var shops = await shopRepo.GetAllAsync();
+    var baseUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+
+    var staticUrls = new[]
+    {
+        (Url: "/",            Priority: "1.0", Freq: "weekly"),
+        (Url: "/servicii",    Priority: "0.9", Freq: "daily"),
+        (Url: "/despre-noi",  Priority: "0.5", Freq: "monthly"),
+        (Url: "/contact",     Priority: "0.5", Freq: "monthly"),
+    };
+
+    var sb = new System.Text.StringBuilder();
+    sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    sb.AppendLine("<urlset xmlns=\"https://www.sitemaps.org/schemas/sitemap/0.9\">");
+
+    foreach (var (url, priority, freq) in staticUrls)
+    {
+        sb.AppendLine($"  <url><loc>{baseUri}{url}</loc><changefreq>{freq}</changefreq><priority>{priority}</priority></url>");
+    }
+
+    foreach (var shop in shops.Where(s => s.Status == PitStop.Domain.Enums.ShopStatus.Active))
+    {
+        var updated = shop.UpdatedAt.ToString("yyyy-MM-dd");
+        sb.AppendLine($"  <url><loc>{baseUri}/serviciu/{shop.Id}</loc><lastmod>{updated}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>");
+    }
+
+    sb.AppendLine("</urlset>");
+    ctx.Response.ContentType = "application/xml; charset=utf-8";
+    await ctx.Response.WriteAsync(sb.ToString());
+});
+
+app.MapPost("/auth/do-forgot-password", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, IEmailService emailSvc, NavigationManager nav) =>
+{
+    var form  = await ctx.Request.ReadFormAsync();
+    var email = form["email"].ToString().Trim();
+
+    if (!string.IsNullOrWhiteSpace(email))
+    {
+        var user = await userMgr.FindByEmailAsync(email);
+        if (user is not null)
+        {
+            var token    = await userMgr.GeneratePasswordResetTokenAsync(user);
+            var baseUri  = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+            var resetUrl = $"{baseUri}/auth/set-password?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+            var html = $"""
+                <p>Bună, {user.FullName}!</p>
+                <p>Am primit o cerere de resetare a parolei pentru contul tău PitStop.</p>
+                <p style="margin:24px 0;">
+                  <a href="{resetUrl}" style="background:#C0392B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
+                    Resetează parola
+                  </a>
+                </p>
+                <p style="color:#888;font-size:12px;">Dacă nu ai solicitat resetarea parolei, ignoră acest email. Link-ul expiră în 24 de ore.</p>
+                """;
+            try { await emailSvc.SendAsync(email, "Resetare parolă PitStop", html); }
+            catch { /* swallow — don't reveal failures */ }
+        }
+    }
+
+    // Always redirect to success (never reveal whether the email exists)
+    return Results.Redirect("/auth/forgot-password?sent=1");
+});
+
+app.MapGet("/auth/google-callback", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, SignInManager<ApplicationUser> signInMgr) =>
+{
+    var info = await signInMgr.GetExternalLoginInfoAsync();
+    if (info is null)
+        return Results.Redirect("/auth/login?error=invalid");
+
+    // Try to sign in with existing external login link
+    var signInResult = await signInMgr.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
+    if (signInResult.Succeeded)
+        return Results.Redirect("/");
+
+    // No existing link — find or create user by email
+    var email = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+    var name  = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? email ?? "Utilizator";
+    if (string.IsNullOrWhiteSpace(email))
+        return Results.Redirect("/auth/login?error=invalid");
+
+    var user = await userMgr.FindByEmailAsync(email);
+    if (user is null)
+    {
+        user = new ApplicationUser { UserName = email, Email = email, FullName = name, EmailConfirmed = true, CreatedAt = DateTime.UtcNow };
+        var createResult = await userMgr.CreateAsync(user);
+        if (!createResult.Succeeded)
+            return Results.Redirect("/auth/login?error=invalid");
+        await userMgr.AddToRoleAsync(user, "User");
+    }
+
+    await userMgr.AddLoginAsync(user, info);
+    await signInMgr.SignInAsync(user, isPersistent: false);
     return Results.Redirect("/");
 });
 

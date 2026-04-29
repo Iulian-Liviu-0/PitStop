@@ -80,4 +80,31 @@ public class ReviewRepository(IDbContextFactory<AppDbContext> factory, ILogger<R
         await ctx.Reviews.Where(r => r.Id == reviewId)
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.UsefulCount, r => r.UsefulCount + 1));
     }
+
+    public async Task SetOwnerResponseAsync(int reviewId, string? response)
+    {
+        await using var ctx = await factory.CreateDbContextAsync();
+        var now = string.IsNullOrWhiteSpace(response) ? (DateTime?)null : DateTime.UtcNow;
+        await ctx.Reviews.Where(r => r.Id == reviewId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.OwnerResponse, response)
+                .SetProperty(r => r.OwnerResponseAt, now));
+    }
+
+    public async Task<(List<Review> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
+    {
+        await using var ctx = await factory.CreateDbContextAsync();
+        var q = ctx.Reviews
+            .AsNoTracking()
+            .Include(r => r.Shop)
+            .OrderByDescending(r => r.CreatedAt);
+
+        var totalCount = await q.CountAsync();
+        var items = await q
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
 }

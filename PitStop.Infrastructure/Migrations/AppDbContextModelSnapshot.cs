@@ -211,6 +211,12 @@ namespace PitStop.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("OwnerResponse")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("OwnerResponseAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("UsefulCount")
                         .HasColumnType("integer");
 
@@ -301,6 +307,9 @@ namespace PitStop.Infrastructure.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.Property<int>("ReviewCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ViewCount")
                         .HasColumnType("integer");
 
                     b.Property<string>("Sector")

@@ -9,6 +9,8 @@ public class Review : BaseEntity
     public int Rating { get; set; }
     public string Text { get; set; } = string.Empty;
     public int UsefulCount { get; set; }
+    public string? OwnerResponse { get; set; }
+    public DateTime? OwnerResponseAt { get; set; }
 
     public Shop Shop { get; set; } = null!;
 }

@@ -9,7 +9,27 @@
 @inject NavigationManager Nav
 @using Microsoft.AspNetCore.Components.Authorization
 
-<PageTitle>@(Shop?.Name ?? "PitStop") - PitStop</PageTitle>
+<PageTitle>@(Shop is null ? "PitStop" : $"{Shop.Name} — {Shop.Category} în {Shop.City} | PitStop")</PageTitle>
+@if (Shop is not null)
+{
+    var absImage = Shop.CoverImage.StartsWith("http") ? Shop.CoverImage : $"{Nav.BaseUri.TrimEnd('/')}{Shop.CoverImage}";
+    var metaDesc = Shop.Description.Length > 155 ? Shop.Description[..155] + "…" : Shop.Description;
+    <HeadContent>
+        <meta name="description" content="@metaDesc" />
+        <meta property="og:type"        content="business.business" />
+        <meta property="og:title"       content="@Shop.Name | PitStop" />
+        <meta property="og:description" content="@metaDesc" />
+        <meta property="og:image"       content="@absImage" />
+        <meta property="og:url"         content="@Nav.Uri" />
+        <meta property="og:locale"      content="ro_RO" />
+        <meta name="twitter:card"        content="summary_large_image" />
+        <meta name="twitter:title"       content="@Shop.Name | PitStop" />
+        <meta name="twitter:description" content="@metaDesc" />
+        <meta name="twitter:image"       content="@absImage" />
+        <link rel="canonical" href="@Nav.Uri" />
+        @((MarkupString)BuildJsonLd())
+    </HeadContent>
+}
 
 @if (Shop is null)
 {
@@ -232,6 +252,17 @@ else
                                         </div>
                                     </div>
                                     <p class="text-text-muted text-sm mb-4">@review.Text</p>
+                                    @if (review.OwnerResponse is { Length: > 0 })
+                                    {
+                                        <div class="bg-surface-container border-l-4 border-brand-red rounded-r-lg px-4 py-3 mb-4">
+                                            <p class="text-xs font-bold text-brand-red mb-1">Răspunsul proprietarului</p>
+                                            <p class="text-sm text-text-main leading-relaxed">@review.OwnerResponse</p>
+                                            @if (review.OwnerResponseDate is { Length: > 0 })
+                                            {
+                                                <p class="text-xs text-text-muted mt-1">@review.OwnerResponseDate</p>
+                                            }
+                                        </div>
+                                    }
                                     <button @onclick="async () => await MarkUseful(review.Id)"
                                             disabled="@_usefulClicked.Contains(review.Id)"
                                             class="flex items-center gap-2 text-sm @(_usefulClicked.Contains(review.Id) ? "text-brand-red" : "text-text-muted hover:text-brand-red") transition-colors">
@@ -550,13 +581,13 @@ else
     [Parameter] public int Id { get; set; }
 
     private record ServiceItem(string Name, string Description, string PriceRange);
-    private record ReviewItem(int Id, string Author, string Initials, int Rating, string Date, string Text, int UsefulCount);
+    private record ReviewItem(int Id, string Author, string Initials, int Rating, string Date, string Text, int UsefulCount, string? OwnerResponse, string? OwnerResponseDate);
     private record HourItem(string DayName, string Open, string Close, bool IsClosed, bool IsToday);
     private record RatingBar(int Stars, int Percentage);
     private record SimilarShop(int Id, string Name, string Sector, double Rating, int ReviewCount, string ImageUrl, List<string> Tags);
 
     private record ShopData(
-        string Name, string Category, string City, string Address,
+        string Name, string Category, string City, string County, string Address,
         string Phone, string Email, string Website,
         double Rating, int ReviewCount, bool IsOpen, string ClosingTime,
         string CoverImage, string Description,
@@ -693,6 +724,8 @@ else
         var shop = await ShopRepo.GetByIdAsync(Id);
         if (shop is null) { Nav.NavigateTo("/not-found"); return; }
 
+        _ = ShopRepo.IncrementViewCountAsync(Id);
+
         // .NET DayOfWeek is Sunday=0; project convention is Monday=0, so shift by 6
         var today = ((int)DateTime.UtcNow.DayOfWeek + 6) % 7;
         var (isOpen, closingTime) = GetOpenStatus(shop.Hours, today);
@@ -701,6 +734,7 @@ else
             Name: shop.Name,
             Category: CategoryDisplayName(shop.Category),
             City: shop.City,
+            County: shop.County,
             Address: shop.Address,
             Phone: shop.Phone,
             Email: shop.Email,
@@ -716,7 +750,9 @@ else
                 s.Name, s.Description, FormatPrice(s.PriceMin, s.PriceMax))).ToList(),
             Photos: shop.Photos.Select(p => p.Url).ToList(),
             Reviews: shop.Reviews.Select(r => new ReviewItem(
-                r.Id, r.UserName, r.UserInitials, r.Rating, FormatDate(r.CreatedAt), r.Text, r.UsefulCount)).ToList(),
+                r.Id, r.UserName, r.UserInitials, r.Rating, FormatDate(r.CreatedAt), r.Text, r.UsefulCount,
+                r.OwnerResponse,
+                r.OwnerResponseAt.HasValue ? FormatDate(r.OwnerResponseAt.Value) : null)).ToList(),
             Hours: shop.Hours.OrderBy(h => h.DayOfWeek).Select(h => new HourItem(
                 DayNames[h.DayOfWeek],
                 h.OpenTime?.ToString("HH:mm") ?? string.Empty,
@@ -864,6 +900,42 @@ else
             < 365 => $"Acum {(int)(diff.TotalDays / 30)} luni",
             _     => $"Acum {(int)(diff.TotalDays / 365)} ani"
         };
+    }
+
+    private string BuildJsonLd()
+    {
+        if (Shop is null) return string.Empty;
+        var absImage = Shop.CoverImage.StartsWith("http")
+            ? Shop.CoverImage
+            : $"{Nav.BaseUri.TrimEnd('/')}{Shop.CoverImage}";
+
+        var data = new System.Collections.Generic.Dictionary<string, object>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"]    = "AutoRepair",
+            ["name"]     = Shop.Name,
+            ["description"] = Shop.Description,
+            ["image"]    = absImage,
+            ["url"]      = Nav.Uri,
+            ["telephone"] = Shop.Phone,
+            ["address"]  = new System.Collections.Generic.Dictionary<string, string>
+            {
+                ["@type"]           = "PostalAddress",
+                ["streetAddress"]   = Shop.Address,
+                ["addressLocality"] = Shop.City,
+                ["addressRegion"]   = Shop.County,
+                ["addressCountry"]  = "RO"
+            },
+            ["aggregateRating"] = new System.Collections.Generic.Dictionary<string, object>
+            {
+                ["@type"]       = "AggregateRating",
+                ["ratingValue"] = Shop.Rating,
+                ["reviewCount"] = Shop.ReviewCount
+            }
+        };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(data);
+        return $"<script type=\"application/ld+json\">{json}</script>";
     }
 
 }

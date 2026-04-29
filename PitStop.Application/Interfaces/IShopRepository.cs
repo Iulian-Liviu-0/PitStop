@@ -9,7 +9,7 @@ public interface IShopRepository
     Task<List<Shop>> GetAllAsync();
     Task<(List<Shop> Items, int TotalCount)> SearchAsync(
         string query,
-        string city,
+        string county,
         ShopCategory? category,
         double? minRating,
         bool? openNow,
@@ -34,4 +34,6 @@ public interface IShopRepository
     Task SetCoverImageAsync(int shopId, string? url);
     Task<ShopBrand> AddBrandAsync(ShopBrand brand);
     Task DeleteBrandAsync(int brandId);
+    Task UpdatePhotoOrderAsync(List<(int PhotoId, int DisplayOrder)> updates);
+    Task IncrementViewCountAsync(int shopId);
 }

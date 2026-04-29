@@ -8,6 +8,8 @@
 @inject IShopRequestRepository RequestRepo
 @inject IReviewRepository ReviewRepo
 @inject UserManager<ApplicationUser> UserMgr
+@inject IEmailService EmailSvc
+@inject NavigationManager Nav
 
 <PageTitle>Admin - PitStop</PageTitle>
 
@@ -69,7 +71,7 @@
     <div class="max-w-screen-xl mx-auto px-6 md:px-12 flex gap-0 overflow-x-auto">
         @foreach (var (id, label) in Tabs)
         {
-            <button @onclick="() => _tab = id"
+            <button @onclick="async () => await SwitchTab(id)"
                     class="px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors @(_tab == id ? "border-brand-red text-brand-red" : "border-transparent text-text-muted hover:text-text-main")">
                 @label
             </button>
@@ -235,7 +237,7 @@
             }
         </div>
     }
-    else
+    else if (_tab == "users")
     {
         <!-- Users tab -->
         <div class="bg-white rounded-xl border border-border-light overflow-hidden">
@@ -260,27 +262,45 @@
                                 <th class="px-5 py-3 text-left font-semibold">Email</th>
                                 <th class="px-5 py-3 text-left font-semibold">Rol</th>
                                 <th class="px-5 py-3 text-left font-semibold">Înregistrat</th>
+                                <th class="px-5 py-3 text-left font-semibold">Acțiuni</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border-light">
                             @foreach (var user in _users)
                             {
-                                <tr class="hover:bg-surface-container/50 transition-colors">
+                                var role = _userRoles.GetValueOrDefault(user.Id, "User");
+                                var isLocked = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
+                                <tr class="hover:bg-surface-container/50 transition-colors @(isLocked ? "opacity-60" : "")">
                                     <td class="px-5 py-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-brand-red-light text-brand-red flex items-center justify-center text-xs font-bold">
+                                            <div class="w-8 h-8 rounded-full bg-brand-red-faint text-brand-red flex items-center justify-center text-xs font-bold">
                                                 @Initials(user.FullName ?? user.Email ?? "?")
                                             </div>
-                                            <span class="font-medium text-text-main">@(user.FullName is { Length: > 0 } n ? n : "–")</span>
+                                            <div>
+                                                <span class="font-medium text-text-main">@(user.FullName is { Length: > 0 } n ? n : "–")</span>
+                                                @if (isLocked)
+                                                {
+                                                    <span class="ml-2 text-[10px] font-bold bg-red-100 text-brand-red px-1.5 py-0.5 rounded">Blocat</span>
+                                                }
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-5 py-4 text-text-muted">@user.Email</td>
                                     <td class="px-5 py-4">
-                                        <span class="px-2.5 py-1 rounded-full text-xs font-bold @RoleBadgeClass(_userRoles.GetValueOrDefault(user.Id, "User"))">
-                                            @_userRoles.GetValueOrDefault(user.Id, "User")
-                                        </span>
+                                        <select value="@role" @onchange="async e => await ChangeRole(user, e.Value?.ToString() ?? role)"
+                                                class="border border-border-light rounded px-2 py-1 text-xs font-semibold bg-white focus:outline-none focus:ring-1 focus:ring-brand-red @RoleBadgeClass(role)">
+                                            <option value="User">User</option>
+                                            <option value="ShopOwner">ShopOwner</option>
+                                            <option value="Admin">Admin</option>
+                                        </select>
                                     </td>
                                     <td class="px-5 py-4 text-text-muted text-xs">@user.CreatedAt.ToString("dd MMM yyyy")</td>
+                                    <td class="px-5 py-4">
+                                        <button @onclick="async () => await ToggleLock(user)"
+                                                class="px-3 py-1.5 border text-xs font-bold rounded transition-colors @(isLocked ? "border-green-200 text-green-600 hover:bg-green-50" : "border-red-200 text-brand-red hover:bg-brand-red-faint")">
+                                            @(isLocked ? "Deblochează" : "Blochează")
+                                        </button>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -288,6 +308,85 @@
                 </div>
             }
         </div>
+    }
+    else
+    {
+        <!-- Reviews tab -->
+        @if (!_reviewsLoaded)
+        {
+            <div class="flex items-center justify-center py-16 text-text-muted gap-2">
+                <span class="material-symbols-outlined animate-spin">progress_activity</span>
+                Se încarcă...
+            </div>
+        }
+        else
+        {
+            <div class="bg-white rounded-xl border border-border-light overflow-hidden">
+                <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
+                    <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Toate recenziile</h2>
+                    <span class="text-sm text-text-muted">@_reviewCount total</span>
+                </div>
+                @if (_adminReviews.Count == 0)
+                {
+                    <div class="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                        <span class="material-symbols-outlined text-4xl">rate_review</span>
+                        <p class="text-sm">Nicio recenzie.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-surface-container text-text-warm text-xs uppercase tracking-wide">
+                                <tr>
+                                    <th class="px-5 py-3 text-left font-semibold">Utilizator</th>
+                                    <th class="px-5 py-3 text-left font-semibold">Serviciu</th>
+                                    <th class="px-5 py-3 text-left font-semibold">Rating</th>
+                                    <th class="px-5 py-3 text-left font-semibold">Recenzie</th>
+                                    <th class="px-5 py-3 text-left font-semibold">Data</th>
+                                    <th class="px-5 py-3 text-left font-semibold">Acțiuni</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-light">
+                                @foreach (var rev in _adminReviews)
+                                {
+                                    <tr class="hover:bg-surface-container/50 transition-colors">
+                                        <td class="px-5 py-4 font-medium text-text-main">@rev.UserName</td>
+                                        <td class="px-5 py-4 text-text-muted">@rev.Shop?.Name</td>
+                                        <td class="px-5 py-4">
+                                            <div class="flex gap-0.5">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <span class="material-symbols-outlined text-sm @(i <= rev.Rating ? "text-brand-red" : "text-gray-300")"
+                                                          style="font-variation-settings: 'FILL' 1;">star</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-4 text-text-muted max-w-xs truncate">@rev.Text</td>
+                                        <td class="px-5 py-4 text-text-muted text-xs">@rev.CreatedAt.ToString("dd MMM yyyy")</td>
+                                        <td class="px-5 py-4">
+                                            <button @onclick="async () => await DeleteReview(rev)"
+                                                    class="px-3 py-1.5 border border-red-200 text-brand-red hover:bg-brand-red-faint text-xs font-bold rounded transition-colors">
+                                                Șterge
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (_reviewCount > _adminReviews.Count)
+                    {
+                        <div class="px-6 py-4 border-t border-border-light">
+                            <button @onclick="LoadMoreAdminReviews"
+                                    class="text-sm font-semibold text-brand-red hover:underline">
+                                Încarcă mai multe (@(_reviewCount - _adminReviews.Count) rămase)
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+        }
     }
 
 </div>
@@ -305,10 +404,17 @@
     private int? _rejectingId;
     private string _rejectNote = "";
 
+    // Reviews tab
+    private List<Review> _adminReviews = [];
+    private bool _reviewsLoaded;
+    private int _adminReviewPage = 1;
+    private const int AdminReviewPageSize = 20;
+
     private (string id, string label)[] Tabs => [
         ("requests", $"Cereri ({_pendingCount})"),
         ("shops", "Servicii"),
         ("users", "Utilizatori"),
+        ("reviews", "Recenzii"),
     ];
 
     protected override async Task OnInitializedAsync()
@@ -339,12 +445,123 @@
         }
     }
 
+    private async Task SwitchTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "reviews" && !_reviewsLoaded)
+        {
+            var (items, _) = await ReviewRepo.GetAllAsync(1, AdminReviewPageSize);
+            _adminReviews = items;
+            _reviewsLoaded = true;
+        }
+    }
+
+    private async Task LoadMoreAdminReviews()
+    {
+        _adminReviewPage++;
+        var (items, _) = await ReviewRepo.GetAllAsync(_adminReviewPage, AdminReviewPageSize);
+        _adminReviews.AddRange(items);
+    }
+
+    private async Task DeleteReview(Review rev)
+    {
+        await ReviewRepo.DeleteAsync(rev.Id);
+        await ShopRepo.RecalcRatingAsync(rev.ShopId);
+        _adminReviews.Remove(rev);
+        _reviewCount--;
+    }
+
+    private async Task ToggleLock(ApplicationUser user)
+    {
+        await UserMgr.SetLockoutEnabledAsync(user, true);
+        var isLocked = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
+        if (isLocked)
+        {
+            await UserMgr.SetLockoutEndDateAsync(user, null);
+            user.LockoutEnd = null;
+        }
+        else
+        {
+            await UserMgr.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+            user.LockoutEnd = DateTimeOffset.MaxValue;
+        }
+    }
+
+    private async Task ChangeRole(ApplicationUser user, string newRole)
+    {
+        var current = _userRoles.GetValueOrDefault(user.Id, "User");
+        if (current == newRole) return;
+        await UserMgr.RemoveFromRoleAsync(user, current);
+        await UserMgr.AddToRoleAsync(user, newRole);
+        _userRoles[user.Id] = newRole;
+    }
+
     private async Task ApproveRequest(int id)
     {
         var req = _requests.First(r => r.Id == id);
+
+        // 1. Create or find the ShopOwner account
+        var owner = await UserMgr.FindByEmailAsync(req.Email);
+        if (owner is null)
+        {
+            owner = new ApplicationUser
+            {
+                UserName = req.Email,
+                Email = req.Email,
+                FullName = req.ContactPerson,
+                EmailConfirmed = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            var createResult = await UserMgr.CreateAsync(owner);
+            if (!createResult.Succeeded) return;
+            await UserMgr.AddToRoleAsync(owner, "ShopOwner");
+        }
+        else if (!await UserMgr.IsInRoleAsync(owner, "ShopOwner"))
+        {
+            await UserMgr.AddToRoleAsync(owner, "ShopOwner");
+        }
+
+        // 2. Create the Shop record linked to the owner
+        var shop = new Shop
+        {
+            Name = req.ShopName,
+            Description = req.Description ?? string.Empty,
+            Address = string.Empty,
+            City = req.City,
+            County = req.County,
+            Phone = req.Phone,
+            Email = req.Email,
+            Category = req.Category,
+            Status = ShopStatus.Active,
+            OwnerId = owner.Id
+        };
+        await ShopRepo.CreateAsync(shop);
+
+        // 3. Generate password reset token and send setup email
+        var token   = await UserMgr.GeneratePasswordResetTokenAsync(owner);
+        var baseUri = Nav.BaseUri.TrimEnd('/');
+        var setupUrl = $"{baseUri}/auth/set-password?userId={Uri.EscapeDataString(owner.Id)}&token={Uri.EscapeDataString(token)}";
+
+        var html = $"""
+            <p>Bună, {req.ContactPerson}!</p>
+            <p>Cererea ta pentru <strong>{req.ShopName}</strong> a fost aprobată pe PitStop.</p>
+            <p>Apasă butonul de mai jos pentru a-ți configura parola și a accesa panoul de administrare al serviciului tău:</p>
+            <p style="margin:24px 0;">
+              <a href="{setupUrl}" style="background:#C0392B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
+                Configurează contul
+              </a>
+            </p>
+            <p style="color:#888;font-size:12px;">Dacă nu ai trimis această cerere, ignoră acest email.</p>
+            """;
+
+        try { await EmailSvc.SendAsync(req.Email, "Contul tău PitStop a fost aprobat", html); }
+        catch { /* email failure should not block approval */ }
+
+        // 4. Update the request status
         req.Status = ShopRequestStatus.Approved;
         await RequestRepo.UpdateAsync(req);
         _pendingCount = _requests.Count(r => r.Status == ShopRequestStatus.Pending);
+        _activeShops = _shops.Count(s => s.Status == ShopStatus.Active) + 1;
     }
 
     private async Task RejectRequest(int id)
