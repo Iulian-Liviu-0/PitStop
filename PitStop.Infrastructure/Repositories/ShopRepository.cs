@@ -34,7 +34,7 @@ public class ShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<Sho
 
     public async Task<(List<Shop> Items, int TotalCount)> SearchAsync(
         string query,
-        string city,
+        string county,
         ShopCategory? category,
         double? minRating,
         bool? openNow,
@@ -52,8 +52,8 @@ public class ShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<Sho
                               s.Description.Contains(query) ||
                               s.City.Contains(query));
 
-        if (!string.IsNullOrWhiteSpace(city))
-            q = q.Where(s => s.City == city);
+        if (!string.IsNullOrWhiteSpace(county))
+            q = q.Where(s => s.County == county);
 
         if (category.HasValue)
             q = q.Where(s => s.Category == category.Value);

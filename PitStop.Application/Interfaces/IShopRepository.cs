@@ -9,7 +9,7 @@ public interface IShopRepository
     Task<List<Shop>> GetAllAsync();
     Task<(List<Shop> Items, int TotalCount)> SearchAsync(
         string query,
-        string city,
+        string county,
         ShopCategory? category,
         double? minRating,
         bool? openNow,

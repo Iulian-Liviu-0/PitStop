@@ -127,8 +127,14 @@ else
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-sm font-semibold text-text-main">Județ</label>
-                                <input @bind="_pCounty" type="text"
-                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                <select @bind="_pCounty"
+                                        class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors bg-white">
+                                    <option value="">Selectează județul</option>
+                                    @foreach (var county in All)
+                                    {
+                                        <option value="@county">@county</option>
+                                    }
+                                </select>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-sm font-semibold text-text-main">Sector (opțional)</label>

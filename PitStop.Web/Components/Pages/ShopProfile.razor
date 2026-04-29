@@ -9,7 +9,27 @@
 @inject NavigationManager Nav
 @using Microsoft.AspNetCore.Components.Authorization
 
-<PageTitle>@(Shop?.Name ?? "PitStop") - PitStop</PageTitle>
+<PageTitle>@(Shop is null ? "PitStop" : $"{Shop.Name} — {Shop.Category} în {Shop.City} | PitStop")</PageTitle>
+@if (Shop is not null)
+{
+    var absImage = Shop.CoverImage.StartsWith("http") ? Shop.CoverImage : $"{Nav.BaseUri.TrimEnd('/')}{Shop.CoverImage}";
+    var metaDesc = Shop.Description.Length > 155 ? Shop.Description[..155] + "…" : Shop.Description;
+    <HeadContent>
+        <meta name="description" content="@metaDesc" />
+        <meta property="og:type"        content="business.business" />
+        <meta property="og:title"       content="@Shop.Name | PitStop" />
+        <meta property="og:description" content="@metaDesc" />
+        <meta property="og:image"       content="@absImage" />
+        <meta property="og:url"         content="@Nav.Uri" />
+        <meta property="og:locale"      content="ro_RO" />
+        <meta name="twitter:card"        content="summary_large_image" />
+        <meta name="twitter:title"       content="@Shop.Name | PitStop" />
+        <meta name="twitter:description" content="@metaDesc" />
+        <meta name="twitter:image"       content="@absImage" />
+        <link rel="canonical" href="@Nav.Uri" />
+        @((MarkupString)BuildJsonLd())
+    </HeadContent>
+}
 
 @if (Shop is null)
 {
@@ -567,7 +587,7 @@ else
     private record SimilarShop(int Id, string Name, string Sector, double Rating, int ReviewCount, string ImageUrl, List<string> Tags);
 
     private record ShopData(
-        string Name, string Category, string City, string Address,
+        string Name, string Category, string City, string County, string Address,
         string Phone, string Email, string Website,
         double Rating, int ReviewCount, bool IsOpen, string ClosingTime,
         string CoverImage, string Description,
@@ -714,6 +734,7 @@ else
             Name: shop.Name,
             Category: CategoryDisplayName(shop.Category),
             City: shop.City,
+            County: shop.County,
             Address: shop.Address,
             Phone: shop.Phone,
             Email: shop.Email,
@@ -879,6 +900,42 @@ else
             < 365 => $"Acum {(int)(diff.TotalDays / 30)} luni",
             _     => $"Acum {(int)(diff.TotalDays / 365)} ani"
         };
+    }
+
+    private string BuildJsonLd()
+    {
+        if (Shop is null) return string.Empty;
+        var absImage = Shop.CoverImage.StartsWith("http")
+            ? Shop.CoverImage
+            : $"{Nav.BaseUri.TrimEnd('/')}{Shop.CoverImage}";
+
+        var data = new System.Collections.Generic.Dictionary<string, object>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"]    = "AutoRepair",
+            ["name"]     = Shop.Name,
+            ["description"] = Shop.Description,
+            ["image"]    = absImage,
+            ["url"]      = Nav.Uri,
+            ["telephone"] = Shop.Phone,
+            ["address"]  = new System.Collections.Generic.Dictionary<string, string>
+            {
+                ["@type"]           = "PostalAddress",
+                ["streetAddress"]   = Shop.Address,
+                ["addressLocality"] = Shop.City,
+                ["addressRegion"]   = Shop.County,
+                ["addressCountry"]  = "RO"
+            },
+            ["aggregateRating"] = new System.Collections.Generic.Dictionary<string, object>
+            {
+                ["@type"]       = "AggregateRating",
+                ["ratingValue"] = Shop.Rating,
+                ["reviewCount"] = Shop.ReviewCount
+            }
+        };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(data);
+        return $"<script type=\"application/ld+json\">{json}</script>";
     }
 
 }

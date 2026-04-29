@@ -2,7 +2,14 @@
 @rendermode InteractiveServer
 @inject IShopRepository ShopRepo
 
-<PageTitle>Căutare Servicii Auto & Moto - PitStop</PageTitle>
+<PageTitle>@(_selectedCategoryName is not null ? $"{_selectedCategoryName} în {(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)} | PitStop" : "Servicii Auto & Moto în România | PitStop")</PageTitle>
+<HeadContent>
+    <meta name="description" content="@(_selectedCategoryName is not null ? $"Găsește {_selectedCategoryName.ToLower()} în {(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)}. Recenzii, program și contact direct." : "Caută și compară servicii auto și moto din România după categorie, județ și rating.")" />
+    <meta property="og:title"       content="Servicii Auto & Moto | PitStop" />
+    <meta property="og:description" content="Găsește servicii auto verificate din toată România." />
+    <meta property="og:type"        content="website" />
+    <meta property="og:locale"      content="ro_RO" />
+</HeadContent>
 
 <div class="min-h-screen bg-surface-bright text-text-main">
     <main class="w-full max-w-screen-xl mx-auto px-6 md:px-10 py-8 flex flex-col lg:flex-row gap-10">
@@ -204,10 +211,7 @@
     ];
 
     private static readonly List<string> Counties =
-    [
-        "Toate județele", "București", "Cluj", "Timiș", "Brașov", "Iași",
-        "Constanța", "Prahova", "Sibiu", "Mureș", "Bihor"
-    ];
+        ["Toate județele", .. All];
 
     protected override async Task OnInitializedAsync()
     {
@@ -246,11 +250,11 @@
     {
         _loading = true;
         var selected = Categories.FirstOrDefault(c => c.Selected);
-        var city = SelectedCounty == "Toate județele" ? "" : SelectedCounty;
+        var county = SelectedCounty == "Toate județele" ? "" : SelectedCounty;
         double? rating = MinRating >= 2 ? MinRating : null;
 
         var (items, total) = await ShopRepo.SearchAsync(
-            SearchQuery, city, selected?.Value, rating,
+            SearchQuery, county, selected?.Value, rating,
             OpenNow ? true : null, CurrentPage, PageSize);
 
         _totalCount = total;
@@ -301,6 +305,8 @@
     private async Task NextPage() { if (CurrentPage < TotalPages) { CurrentPage++; await LoadShops(); } }
 
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(_totalCount / (double)PageSize));
+
+    private string? _selectedCategoryName => Categories.FirstOrDefault(c => c.Selected)?.Name;
 
     private string GetPageClass(int pageNum) =>
         pageNum == CurrentPage ? "bg-brand-red text-white shadow-sm" : "text-text-warm hover:bg-surface-container";
