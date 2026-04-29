@@ -1,0 +1,80 @@
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="Close">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8" @onclick:stopPropagation="true">
+            @if (_submitted)
+            {
+                <div class="text-center py-4">
+                    <span class="material-symbols-outlined text-6xl text-green-500 block mb-3"
+                          style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    <h3 class="font-bold text-xl text-text-main mb-2" style="font-family: Manrope, sans-serif;">Mulțumim!</h3>
+                    <p class="text-text-muted text-sm mb-6">Raportul tău a fost trimis. Vom analiza situația cât mai curând.</p>
+                    <button @onclick="Close"
+                            class="px-6 py-2.5 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-colors">
+                        Închide
+                    </button>
+                </div>
+            }
+            else
+            {
+                <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Raportează o problemă</h3>
+                <p class="text-text-muted text-sm mb-6">Ajută-ne să menținem informațiile corecte și actualizate.</p>
+
+                <div class="space-y-3 mb-5">
+                    @foreach (var option in _options)
+                    {
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="radio" name="reportType" value="@option"
+                                   checked="@(_reportType == option)"
+                                   @onchange="() => _reportType = option"
+                                   class="accent-brand-red w-4 h-4 shrink-0" />
+                            <span class="text-text-main text-sm group-hover:text-brand-red transition-colors">@option</span>
+                        </label>
+                    }
+                </div>
+
+                <textarea @bind="_reportDescription"
+                          placeholder="Detalii suplimentare (opțional)..."
+                          rows="3"
+                          class="w-full border border-border-light rounded-lg px-4 py-3 text-sm text-text-main placeholder:text-text-muted resize-none focus:outline-none focus:border-brand-red transition-colors mb-6"></textarea>
+
+                <div class="flex gap-3">
+                    <button @onclick="Close"
+                            class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
+                        Anulează
+                    </button>
+                    <button @onclick="() => _submitted = true"
+                            class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-all text-sm">
+                        Trimite raport
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool _submitted;
+    private string _reportType = "Informații incorecte";
+    private string _reportDescription = string.Empty;
+
+    private static readonly string[] _options =
+    [
+        "Informații incorecte",
+        "Afacere închisă definitiv",
+        "Conținut duplicat",
+        "Spam sau fraudă",
+        "Altele"
+    ];
+
+    private async Task Close()
+    {
+        _submitted = false;
+        _reportDescription = string.Empty;
+        _reportType = "Informații incorecte";
+        await OnClose.InvokeAsync();
+    }
+}

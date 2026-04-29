@@ -1,11 +1,9 @@
 @page "/serviciu/{Id:int}"
 @rendermode InteractiveServer
 @inject IShopRepository ShopRepo
-@inject IReviewRepository ReviewRepo
 @inject IFavoriteShopRepository FavoriteRepo
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserManager<ApplicationUser> UserManager
-@inject IJSRuntime JS
 @inject NavigationManager Nav
 @using Microsoft.AspNetCore.Components.Authorization
 
@@ -41,609 +39,62 @@ else
 {
 <div class="bg-surface-bright min-h-screen">
 
-    <!-- ─── HERO BANNER ─── -->
-    <section class="relative w-full overflow-hidden" style="height: 350px;">
-        <img src="@Shop.CoverImage" alt="@Shop.Name"
-             class="absolute inset-0 w-full h-full object-cover" />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+    <ShopHeroBanner Shop="Shop" IsFavorite="_isFavorite" IsTogglingFavorite="_togglingFavorite"
+                    PageUrl="@Nav.Uri" OnToggleFavorite="ToggleFavorite" />
 
-        <!-- Butoane top-right -->
-        <div class="absolute top-6 right-6 flex gap-3 z-10">
-            <button @onclick="ToggleFavorite" disabled="@_togglingFavorite"
-                    class="flex items-center gap-2 px-4 py-2 border border-white text-white rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md text-sm font-semibold @(_isFavorite ? "bg-white/20" : "")">
-                <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' @(_isFavorite ? "1" : "0");">favorite</span>
-                @(_isFavorite ? "Salvat" : "Salvează")
-            </button>
-            <div class="relative">
-                <button @onclick='() => _shareOpen = !_shareOpen'
-                        class="flex items-center gap-2 px-4 py-2 border border-white text-white rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md text-sm font-semibold">
-                    <span class="material-symbols-outlined text-xl">share</span>
-                    Distribuie
-                </button>
-                @if (_shareOpen)
-                {
-                    <div class="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-border-light py-1.5 min-w-[190px] z-20">
-                        <a href="https://wa.me/?text=@Uri.EscapeDataString($"Verifică {Shop?.Name} pe PitStop: {Nav.Uri}")"
-                           target="_blank" rel="noopener"
-                           @onclick='() => _shareOpen = false'
-                           class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-main hover:bg-surface-container transition-colors">
-                            <span class="w-5 h-5 text-green-500 font-black text-base leading-none">W</span>
-                            WhatsApp
-                        </a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString(Nav.Uri)"
-                           target="_blank" rel="noopener"
-                           @onclick='() => _shareOpen = false'
-                           class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-main hover:bg-surface-container transition-colors">
-                            <span class="w-5 h-5 text-blue-600 font-black text-base leading-none">f</span>
-                            Facebook
-                        </a>
-                        <div class="my-1 border-t border-border-light"></div>
-                        <button @onclick="CopyLink"
-                                class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-main hover:bg-surface-container transition-colors">
-                            <span class="material-symbols-outlined text-base text-text-muted">@(_shareCopied ? "check" : "link")</span>
-                            @(_shareCopied ? "Link copiat!" : "Copiază link")
-                        </button>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- Info overlay bottom-left -->
-        <div class="absolute bottom-10 left-0 w-full z-10">
-            <div class="max-w-7xl mx-auto px-6">
-                <span class="inline-block bg-brand-red text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-                    @Shop.Category
-                </span>
-                <h1 class="font-black text-5xl text-white tracking-tighter mb-4" style="font-family: Manrope, sans-serif;">
-                    @Shop.Name
-                </h1>
-                <div class="flex flex-wrap items-center gap-6 text-white/90">
-                    <div class="flex items-center gap-1">
-                        <span class="material-symbols-outlined text-brand-red text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
-                        <span class="font-bold">@Shop.Rating</span>
-                        <span class="text-sm opacity-80">(@Shop.ReviewCount recenzii)</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="material-symbols-outlined text-lg">location_on</span>
-                        <span class="text-sm">@Shop.City</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        @if (Shop.IsOpen)
-                        {
-                            <span class="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold uppercase">Deschis acum</span>
-                            @if (!string.IsNullOrEmpty(Shop.ClosingTime))
-                            {
-                                <span class="text-sm opacity-80">Închide la @Shop.ClosingTime</span>
-                            }
-                        }
-                        else
-                        {
-                            <span class="bg-red-700 text-white px-2 py-0.5 rounded text-xs font-bold uppercase">Închis</span>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ─── MAIN CONTENT ─── -->
     <div class="max-w-7xl mx-auto px-6 py-12">
         <div class="flex flex-col lg:flex-row gap-8">
 
-            <!-- ─── COLOANA STÂNGA ─── -->
             <div class="lg:w-2/3 space-y-8">
-
-                <!-- Despre noi -->
-                <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
-                    <h2 class="font-bold text-2xl text-text-main mb-4" style="font-family: Manrope, sans-serif;">Despre noi</h2>
-                    <p class="text-text-muted leading-relaxed mb-6">@Shop.Description</p>
-                    @if (Shop.Brands.Count > 0)
-                    {
-                        <div class="flex flex-wrap gap-2">
-                            @foreach (var brand in Shop.Brands)
-                            {
-                                <span class="bg-secondary-light text-secondary px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide">
-                                    @brand
-                                </span>
-                            }
-                        </div>
-                    }
-                </div>
-
-                <!-- Servicii oferite -->
-                @if (Shop.Services.Count > 0)
-                {
-                    <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
-                        <h2 class="font-bold text-2xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Servicii oferite</h2>
-                        <div class="space-y-3">
-                            @foreach (var service in Shop.Services)
-                            {
-                                <div class="flex items-center justify-between p-4 bg-surface-low rounded-lg hover:bg-surface-container transition-colors border border-border-light">
-                                    <div class="flex-1 mr-4">
-                                        <h4 class="font-bold text-text-main">@service.Name</h4>
-                                        <p class="text-sm text-text-muted">@service.Description</p>
-                                    </div>
-                                    <span class="bg-brand-red text-white px-3 py-1 rounded font-bold text-sm whitespace-nowrap">
-                                        @service.PriceRange
-                                    </span>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-
-                <!-- Galerie foto -->
-                @if (Shop.Photos.Count > 0)
-                {
-                    <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="font-bold text-2xl text-text-main" style="font-family: Manrope, sans-serif;">Galerie foto</h2>
-                            <button class="text-brand-red font-bold text-sm hover:underline" @onclick="() => OpenLightbox(0)">
-                                Vezi tot (@Shop.Photos.Count)
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            @for (int i = 0; i < Shop.Photos.Count; i++)
-                            {
-                                var photoIdx = i;
-                                <img src="@Shop.Photos[photoIdx]" alt="Foto service"
-                                     class="w-full h-40 object-cover rounded-lg shadow-sm hover:opacity-90 transition-opacity cursor-pointer"
-                                     @onclick="() => OpenLightbox(photoIdx)" />
-                            }
-                        </div>
-                    </div>
-                }
-
-                <!-- Recenzii -->
-                <div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
-                    <h2 class="font-bold text-2xl text-text-main mb-8" style="font-family: Manrope, sans-serif;">Recenzii clienți</h2>
-
-                    <!-- Rating summary -->
-                    <div class="flex flex-col md:flex-row gap-12 mb-10 items-center">
-                        <div class="text-center shrink-0">
-                            <div class="text-6xl font-black text-text-main leading-none mb-2" style="font-family: Manrope, sans-serif;">@Shop.Rating</div>
-                            <div class="flex justify-center mb-1">
-                                @for (int i = 1; i <= 5; i++)
-                                {
-                                    <span class="material-symbols-outlined text-brand-red" style="font-variation-settings: 'FILL' 1;">star</span>
-                                }
-                            </div>
-                            <div class="text-sm text-text-muted font-medium">@Shop.ReviewCount recenzii</div>
-                        </div>
-                        <div class="flex-1 w-full space-y-3">
-                            @foreach (var bar in RatingBars)
-                            {
-                                <div class="flex items-center gap-4">
-                                    <span class="text-sm font-bold w-4 text-text-main">@bar.Stars</span>
-                                    <div class="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
-                                        <div class="h-full bg-brand-red rounded-full transition-all duration-500"
-                                             style="width: @(bar.Percentage)%"></div>
-                                    </div>
-                                    <span class="text-sm text-text-muted w-10 text-right">@(bar.Percentage)%</span>
-                                </div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Review cards -->
-                    @if (Shop.Reviews.Count > 0)
-                    {
-                        <div class="space-y-6 mb-8">
-                            @foreach (var review in Shop.Reviews)
-                            {
-                                <div class="bg-surface-bright p-6 rounded-lg border border-border-light">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div class="flex gap-4 items-center">
-                                            <div class="w-12 h-12 rounded-full bg-brand-red-faint flex items-center justify-center font-bold text-brand-red text-sm shrink-0">
-                                                @review.Initials
-                                            </div>
-                                            <div>
-                                                <h5 class="font-bold text-text-main">@review.Author</h5>
-                                                <p class="text-xs text-text-muted">@review.Date</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex shrink-0">
-                                            @for (int i = 1; i <= 5; i++)
-                                            {
-                                                var starVal = i;
-                                                <span class="material-symbols-outlined text-brand-red text-sm"
-                                                      style="font-variation-settings: 'FILL' @(starVal <= review.Rating ? "1" : "0");">star</span>
-                                            }
-                                        </div>
-                                    </div>
-                                    <p class="text-text-muted text-sm mb-4">@review.Text</p>
-                                    @if (review.OwnerResponse is { Length: > 0 })
-                                    {
-                                        <div class="bg-surface-container border-l-4 border-brand-red rounded-r-lg px-4 py-3 mb-4">
-                                            <p class="text-xs font-bold text-brand-red mb-1">Răspunsul proprietarului</p>
-                                            <p class="text-sm text-text-main leading-relaxed">@review.OwnerResponse</p>
-                                            @if (review.OwnerResponseDate is { Length: > 0 })
-                                            {
-                                                <p class="text-xs text-text-muted mt-1">@review.OwnerResponseDate</p>
-                                            }
-                                        </div>
-                                    }
-                                    <button @onclick="async () => await MarkUseful(review.Id)"
-                                            disabled="@_usefulClicked.Contains(review.Id)"
-                                            class="flex items-center gap-2 text-sm @(_usefulClicked.Contains(review.Id) ? "text-brand-red" : "text-text-muted hover:text-brand-red") transition-colors">
-                                        <span class="material-symbols-outlined text-lg"
-                                              style="font-variation-settings: 'FILL' @(_usefulClicked.Contains(review.Id) ? "1" : "0");">thumb_up</span>
-                                        <span>Util (@review.UsefulCount)</span>
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                    }
-
-                    <button @onclick="OpenReview"
-                            class="w-full py-4 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-all active:scale-[0.98]"
-                            style="font-family: Manrope, sans-serif;">
-                        Scrie o recenzie
-                    </button>
-                </div>
+                <ShopAboutCard Description="@Shop.Description" Brands="Shop.Brands" />
+                <ShopServicesCard Services="Shop.Services" />
+                <ShopGallery Photos="Shop.Photos" />
+                <ShopReviewsSection ShopId="Id" ShopName="@Shop.Name"
+                                    Reviews="Shop.Reviews" RatingBars="RatingBars"
+                                    OverallRating="Shop.Rating" TotalCount="Shop.ReviewCount"
+                                    IsAuthenticated="_isAuthenticated" UserId="@_userId"
+                                    UserDisplayName="@_userDisplayName" UserInitials="@_userInitials"
+                                    OnReviewSubmitted="LoadShop" />
             </div>
 
-            <!-- ─── COLOANA DREAPTA (sticky) ─── -->
             <div class="lg:w-1/3">
                 <div class="sticky top-24 space-y-6">
-
-                    <!-- Contact card -->
-                    <div class="bg-white rounded-xl p-6 shadow-md border border-border-light">
-                        <a href="tel:@Shop.Phone.Replace(" ", "")"
-                           class="w-full py-4 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-all mb-6 flex items-center justify-center gap-2 no-underline"
-                           style="font-family: Manrope, sans-serif;">
-                            <span class="material-symbols-outlined">call</span>
-                            Contactează acum
-                        </a>
-                        <div class="space-y-4">
-                            <div class="flex items-start gap-4">
-                                <span class="material-symbols-outlined text-brand-red shrink-0">phone</span>
-                                <div>
-                                    <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Telefon</p>
-                                    <p class="text-text-main font-semibold">@Shop.Phone</p>
-                                </div>
-                            </div>
-                            @if (!string.IsNullOrEmpty(Shop.Email))
-                            {
-                                <div class="flex items-start gap-4">
-                                    <span class="material-symbols-outlined text-brand-red shrink-0">mail</span>
-                                    <div>
-                                        <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Email</p>
-                                        <p class="text-text-main font-semibold">@Shop.Email</p>
-                                    </div>
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(Shop.Website))
-                            {
-                                <div class="flex items-start gap-4">
-                                    <span class="material-symbols-outlined text-brand-red shrink-0">language</span>
-                                    <div>
-                                        <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Website</p>
-                                        <a href="https://@Shop.Website" target="_blank"
-                                           class="text-brand-red font-semibold hover:underline">@Shop.Website</a>
-                                    </div>
-                                </div>
-                            }
-                            <div class="flex items-start gap-4">
-                                <span class="material-symbols-outlined text-brand-red shrink-0">location_on</span>
-                                <div>
-                                    <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Adresă</p>
-                                    <p class="text-text-main font-semibold leading-tight">@Shop.Address</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Program card -->
-                    @if (Shop.Hours.Count > 0)
-                    {
-                        <div class="bg-white rounded-xl p-6 shadow-sm border border-border-light">
-                            <h3 class="font-bold text-lg text-text-main mb-4 flex items-center gap-2"
-                                style="font-family: Manrope, sans-serif;">
-                                <span class="material-symbols-outlined text-text-muted">schedule</span>
-                                Program de funcționare
-                            </h3>
-                            <div class="space-y-3">
-                                @foreach (var day in Shop.Hours)
-                                {
-                                    <div class="flex justify-between items-center text-sm @(day.IsToday ? "px-2 py-2 bg-brand-red/5 rounded-lg border-l-4 border-brand-red" : "py-1")">
-                                        <span class="@(day.IsToday ? "text-brand-red font-bold" : "text-text-muted")">
-                                            @day.DayName @(day.IsToday ? "(Astăzi)" : "")
-                                        </span>
-                                        <span class="@(day.IsToday ? "text-brand-red font-bold" : day.IsClosed ? "text-red-500 font-bold" : "font-semibold text-text-main")">
-                                            @(day.IsClosed ? "Închis" : $"{day.Open} - {day.Close}")
-                                        </span>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    <!-- Locatie card -->
-                    <div class="bg-white rounded-xl p-6 shadow-sm border border-border-light">
-                        <h3 class="font-bold text-lg text-text-main mb-4" style="font-family: Manrope, sans-serif;">Locație</h3>
-                        <div class="relative w-full h-[220px] bg-surface-container rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-border-light">
-                            <div class="text-center">
-                                <span class="material-symbols-outlined text-6xl text-brand-red"
-                                      style="font-variation-settings: 'FILL' 1;">location_on</span>
-                                <p class="text-sm text-text-muted mt-2 px-4">@Shop.Address</p>
-                            </div>
-                        </div>
-                        <a href="https://maps.google.com/?q=@Uri.EscapeDataString(Shop.Address)"
-                           target="_blank"
-                           class="flex items-center justify-center gap-2 text-brand-blue font-bold text-sm hover:underline">
-                            <span class="material-symbols-outlined text-lg">open_in_new</span>
-                            Deschide în Google Maps
-                        </a>
-                    </div>
-
-                    <!-- Raportează problemă -->
-                    <button @onclick="() => _reportOpen = true"
+                    <ShopContactCard Phone="@Shop.Phone" Email="@Shop.Email"
+                                     Website="@Shop.Website" Address="@Shop.Address" />
+                    <ShopHoursCard Hours="Shop.Hours" />
+                    <ShopLocationCard Address="@Shop.Address" />
+                    <button @onclick='() => _reportOpen = true'
                             class="w-full flex items-center justify-center gap-1.5 py-1 text-text-muted hover:text-brand-red transition-colors text-xs font-medium">
                         <span class="material-symbols-outlined text-base">flag</span>
                         Raportează o problemă cu acest profil
                     </button>
-
                 </div>
             </div>
         </div>
 
-        <!-- ─── SERVICII SIMILARE ─── -->
-        @if (SimilarShops.Count > 0)
-        {
-            <section class="mt-16">
-                <h2 class="font-extrabold text-3xl text-text-main mb-8 tracking-tight"
-                    style="font-family: Manrope, sans-serif;">
-                    Servicii similare în @Shop.City
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    @foreach (var similar in SimilarShops)
-                    {
-                        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group border border-border-light">
-                            <div class="relative h-48 overflow-hidden bg-surface-container">
-                                <img src="@similar.ImageUrl" alt="@similar.Name"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase text-text-main">
-                                    @similar.Sector
-                                </div>
-                            </div>
-                            <div class="p-5">
-                                <h3 class="font-bold text-lg text-text-main mb-2" style="font-family: Manrope, sans-serif;">@similar.Name</h3>
-                                <div class="flex items-center gap-1 mb-3">
-                                    <span class="material-symbols-outlined text-brand-red text-sm"
-                                          style="font-variation-settings: 'FILL' 1;">star</span>
-                                    <span class="font-bold text-sm">@similar.Rating</span>
-                                    <span class="text-xs text-text-muted">(@similar.ReviewCount recenzii)</span>
-                                </div>
-                                <div class="flex flex-wrap gap-2 mb-4">
-                                    @foreach (var tag in similar.Tags)
-                                    {
-                                        <span class="bg-surface-container text-secondary px-2 py-0.5 rounded text-[10px] font-bold">@tag</span>
-                                    }
-                                </div>
-                                <a href="/serviciu/@similar.Id"
-                                   class="block w-full py-2 border border-brand-red text-brand-red font-bold rounded hover:bg-brand-red hover:text-white transition-colors text-sm text-center">
-                                    Vezi profil
-                                </a>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </section>
-        }
+        <ShopSimilarSection SimilarShops="SimilarShops" City="@Shop.City" />
     </div>
 </div>
 
-<!-- ─── SCRIE O RECENZIE ─── -->
-@if (_reviewOpen)
-{
-    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="CloseReview">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8" @onclick:stopPropagation="true">
-            <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Scrie o recenzie</h3>
-            <p class="text-text-muted text-sm mb-6">@Shop?.Name</p>
-
-            <!-- Star picker -->
-            <div class="flex gap-2 mb-6">
-                @for (int i = 1; i <= 5; i++)
-                {
-                    var star = i;
-                    <button @onclick="() => _newRating = star"
-                            class="text-3xl transition-transform hover:scale-110 active:scale-95">
-                        <span class="material-symbols-outlined text-3xl @(star <= _newRating ? "text-brand-red" : "text-gray-300")"
-                              style="font-variation-settings: 'FILL' 1;">star</span>
-                    </button>
-                }
-            </div>
-
-            <textarea @bind="_newReviewText"
-                      placeholder="Descrie experiența ta cu acest serviciu..."
-                      rows="4"
-                      class="w-full border border-border-light rounded-lg px-4 py-3 text-sm text-text-main placeholder:text-text-muted resize-none focus:outline-none focus:border-brand-red transition-colors mb-2"></textarea>
-
-            @if (_reviewError is { Length: > 0 })
-            {
-                <div class="flex items-center gap-2 bg-brand-red-faint border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red mb-4">
-                    <span class="material-symbols-outlined text-lg">error</span>
-                    @_reviewError
-                </div>
-            }
-
-            <div class="flex gap-3 mt-4">
-                <button @onclick="CloseReview"
-                        class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
-                    Anulează
-                </button>
-                <button @onclick="SubmitReview" disabled="@(_submittingReview || string.IsNullOrWhiteSpace(_newReviewText))"
-                        class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-all text-sm">
-                    @(_submittingReview ? "Se trimite..." : "Publică recenzia")
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- ─── LIGHTBOX ─── -->
-@if (_lightboxOpen && Shop is not null && Shop.Photos.Count > 0)
-{
-    <div class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
-         @ref="_lightboxRef" tabindex="-1"
-         @onkeydown="HandleLightboxKey" @onclick="CloseLightbox">
-
-        <button class="absolute top-4 right-4 z-10 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                @onclick:stopPropagation="true" @onclick="CloseLightbox">
-            <span class="material-symbols-outlined text-3xl">close</span>
-        </button>
-
-        @if (Shop.Photos.Count > 1)
-        {
-            <button class="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    @onclick:stopPropagation="true" @onclick="PrevPhoto">
-                <span class="material-symbols-outlined text-5xl">chevron_left</span>
-            </button>
-        }
-
-        <img src="@Shop.Photos[_lightboxIndex]" alt="Foto service"
-             class="max-h-[85vh] max-w-[85vw] object-contain rounded-lg shadow-2xl select-none"
-             @onclick:stopPropagation="true" />
-
-        @if (Shop.Photos.Count > 1)
-        {
-            <button class="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    @onclick:stopPropagation="true" @onclick="NextPhoto">
-                <span class="material-symbols-outlined text-5xl">chevron_right</span>
-            </button>
-        }
-
-        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-sm font-semibold select-none">
-            @(_lightboxIndex + 1) / @Shop.Photos.Count
-        </div>
-    </div>
-}
-
-<!-- ─── RAPORTEAZĂ PROBLEMĂ ─── -->
-@if (_reportOpen)
-{
-    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="CloseReport">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8" @onclick:stopPropagation="true">
-            @if (_reportSubmitted)
-            {
-                <div class="text-center py-4">
-                    <span class="material-symbols-outlined text-6xl text-green-500 block mb-3"
-                          style="font-variation-settings: 'FILL' 1;">check_circle</span>
-                    <h3 class="font-bold text-xl text-text-main mb-2" style="font-family: Manrope, sans-serif;">Mulțumim!</h3>
-                    <p class="text-text-muted text-sm mb-6">Raportul tău a fost trimis. Vom analiza situația cât mai curând.</p>
-                    <button @onclick="CloseReport"
-                            class="px-6 py-2.5 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-colors">
-                        Închide
-                    </button>
-                </div>
-            }
-            else
-            {
-                <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Raportează o problemă</h3>
-                <p class="text-text-muted text-sm mb-6">Ajută-ne să menținem informațiile corecte și actualizate.</p>
-
-                <div class="space-y-3 mb-5">
-                    @foreach (var option in _reportOptions)
-                    {
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" name="reportType" value="@option"
-                                   checked="@(_reportType == option)"
-                                   @onchange="() => _reportType = option"
-                                   class="accent-brand-red w-4 h-4 shrink-0" />
-                            <span class="text-text-main text-sm group-hover:text-brand-red transition-colors">@option</span>
-                        </label>
-                    }
-                </div>
-
-                <textarea @bind="_reportDescription"
-                          placeholder="Detalii suplimentare (opțional)..."
-                          rows="3"
-                          class="w-full border border-border-light rounded-lg px-4 py-3 text-sm text-text-main placeholder:text-text-muted resize-none focus:outline-none focus:border-brand-red transition-colors mb-6"></textarea>
-
-                <div class="flex gap-3">
-                    <button @onclick="CloseReport"
-                            class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
-                        Anulează
-                    </button>
-                    <button @onclick="SubmitReport"
-                            class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-all text-sm">
-                        Trimite raport
-                    </button>
-                </div>
-            }
-        </div>
-    </div>
-}
+<ReportModal IsOpen="_reportOpen" OnClose='() => _reportOpen = false' />
 }
 
 @code {
     [Parameter] public int Id { get; set; }
 
-    private record ServiceItem(string Name, string Description, string PriceRange);
-    private record ReviewItem(int Id, string Author, string Initials, int Rating, string Date, string Text, int UsefulCount, string? OwnerResponse, string? OwnerResponseDate);
-    private record HourItem(string DayName, string Open, string Close, bool IsClosed, bool IsToday);
-    private record RatingBar(int Stars, int Percentage);
-    private record SimilarShop(int Id, string Name, string Sector, double Rating, int ReviewCount, string ImageUrl, List<string> Tags);
-
-    private record ShopData(
-        string Name, string Category, string City, string County, string Address,
-        string Phone, string Email, string Website,
-        double Rating, int ReviewCount, bool IsOpen, string ClosingTime,
-        string CoverImage, string Description,
-        List<string> Brands, List<ServiceItem> Services,
-        List<string> Photos, List<ReviewItem> Reviews,
-        List<HourItem> Hours
-    );
-
-    private ShopData? Shop;
+    private ShopProfileData? Shop;
     private List<RatingBar> RatingBars = [];
     private List<SimilarShop> SimilarShops = [];
     private int _loadedId;
 
-    // Auth
     private string _userId = string.Empty;
     private string _userDisplayName = string.Empty;
     private string _userInitials = string.Empty;
     private bool _isAuthenticated;
 
-    // Favorite
     private bool _isFavorite;
     private bool _togglingFavorite;
-
-    // Share
-    private bool _shareOpen;
-    private bool _shareCopied;
-
-    // Review modal
-    private bool _reviewOpen;
-    private int _newRating = 5;
-    private string _newReviewText = string.Empty;
-    private bool _submittingReview;
-    private string _reviewError = string.Empty;
-
-    // Useful votes (per-session)
-    private readonly HashSet<int> _usefulClicked = [];
-
-    // Lightbox
-    private bool _lightboxOpen;
-    private int _lightboxIndex;
-    private bool _lightboxJustOpened;
-    private ElementReference _lightboxRef;
-
-    // Report
     private bool _reportOpen;
-    private bool _reportSubmitted;
-    private string _reportType = "Informații incorecte";
-    private string _reportDescription = string.Empty;
-    private static readonly string[] _reportOptions =
-    [
-        "Informații incorecte",
-        "Afacere închisă definitiv",
-        "Conținut duplicat",
-        "Spam sau fraudă",
-        "Altele"
-    ];
 
     private static readonly string[] DayNames = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 
@@ -654,19 +105,9 @@ else
         {
             _isAuthenticated = true;
             _userId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            // Identity.Name returns the username/email; fetch FullName from ApplicationUser instead
             var appUser = await UserManager.FindByIdAsync(_userId);
             _userDisplayName = appUser?.FullName ?? "Utilizator";
             _userInitials = Initials(_userDisplayName);
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_lightboxJustOpened)
-        {
-            _lightboxJustOpened = false;
-            await _lightboxRef.FocusAsync();
         }
     }
 
@@ -675,47 +116,6 @@ else
         if (Id == _loadedId) return;
         _loadedId = Id;
         await LoadShop();
-    }
-
-    private void OpenLightbox(int index)
-    {
-        _lightboxIndex = index;
-        _lightboxOpen = true;
-        _lightboxJustOpened = true;
-    }
-
-    private void CloseLightbox() => _lightboxOpen = false;
-
-    private void PrevPhoto()
-    {
-        if (Shop?.Photos.Count > 0)
-            _lightboxIndex = (_lightboxIndex - 1 + Shop.Photos.Count) % Shop.Photos.Count;
-    }
-
-    private void NextPhoto()
-    {
-        if (Shop?.Photos.Count > 0)
-            _lightboxIndex = (_lightboxIndex + 1) % Shop.Photos.Count;
-    }
-
-    private void HandleLightboxKey(KeyboardEventArgs e)
-    {
-        switch (e.Key)
-        {
-            case "Escape": CloseLightbox(); break;
-            case "ArrowLeft": PrevPhoto(); break;
-            case "ArrowRight": NextPhoto(); break;
-        }
-    }
-
-    private void SubmitReport() => _reportSubmitted = true;
-
-    private void CloseReport()
-    {
-        _reportOpen = false;
-        _reportSubmitted = false;
-        _reportDescription = string.Empty;
-        _reportType = "Informații incorecte";
     }
 
     private async Task LoadShop()
@@ -730,7 +130,7 @@ else
         var today = ((int)DateTime.UtcNow.DayOfWeek + 6) % 7;
         var (isOpen, closingTime) = GetOpenStatus(shop.Hours, today);
 
-        Shop = new ShopData(
+        Shop = new ShopProfileData(
             Name: shop.Name,
             Category: CategoryDisplayName(shop.Category),
             City: shop.City,
@@ -794,75 +194,6 @@ else
         _togglingFavorite = false;
     }
 
-    private async Task CopyLink()
-    {
-        await JS.InvokeVoidAsync("copyToClipboard", Nav.Uri);
-        _shareCopied = true;
-        _shareOpen = false;
-        StateHasChanged();
-        await Task.Delay(2000);
-        _shareCopied = false;
-    }
-
-    private void OpenReview()
-    {
-        if (!_isAuthenticated) { Nav.NavigateTo($"/auth/login?returnUrl={Uri.EscapeDataString($"/serviciu/{Id}")}", forceLoad: true); return; }
-        _reviewError = string.Empty;
-        _reviewOpen = true;
-    }
-
-    private void CloseReview()
-    {
-        _reviewOpen = false;
-        _reviewError = string.Empty;
-        _newReviewText = string.Empty;
-        _newRating = 5;
-    }
-
-    private async Task SubmitReview()
-    {
-        if (string.IsNullOrWhiteSpace(_newReviewText)) return;
-        _submittingReview = true;
-        _reviewError = string.Empty;
-        try
-        {
-            var review = new Review
-            {
-                ShopId = Id,
-                UserId = _userId,
-                UserName = _userDisplayName,
-                UserInitials = _userInitials,
-                Rating = _newRating,
-                Text = _newReviewText.Trim(),
-            };
-            await ReviewRepo.CreateAsync(review);
-            await ShopRepo.RecalcRatingAsync(Id);
-            CloseReview();
-            await LoadShop();
-        }
-        catch (Microsoft.EntityFrameworkCore.DbUpdateException)
-        {
-            // ReviewConfiguration enforces a unique index on (ShopId, UserId)
-            _reviewError = "Ai deja o recenzie pentru acest serviciu.";
-        }
-        finally
-        {
-            _submittingReview = false;
-        }
-    }
-
-    private async Task MarkUseful(int reviewId)
-    {
-        if (_usefulClicked.Contains(reviewId)) return;
-        _usefulClicked.Add(reviewId);
-        await ReviewRepo.IncrementUsefulAsync(reviewId);
-        if (Shop is not null)
-        {
-            var idx = Shop.Reviews.FindIndex(r => r.Id == reviewId);
-            if (idx >= 0) Shop.Reviews[idx] = Shop.Reviews[idx] with { UsefulCount = Shop.Reviews[idx].UsefulCount + 1 };
-        }
-    }
-
     private static (bool IsOpen, string ClosingTime) GetOpenStatus(ICollection<ShopHour> hours, int today)
     {
         var now = TimeOnly.FromDateTime(DateTime.UtcNow);
@@ -890,16 +221,13 @@ else
 
     private static string FormatDate(DateTime date)
     {
-        var diff = DateTime.UtcNow - date;
-        return diff.TotalDays switch
-        {
-            < 1   => "Astăzi",
-            < 2   => "Ieri",
-            < 7   => $"Acum {(int)diff.TotalDays} zile",
-            < 30  => $"Acum {(int)(diff.TotalDays / 7)} săptămâni",
-            < 365 => $"Acum {(int)(diff.TotalDays / 30)} luni",
-            _     => $"Acum {(int)(diff.TotalDays / 365)} ani"
-        };
+        var days = (DateTime.UtcNow - date).TotalDays;
+        if (days < 1) return "Astăzi";
+        if (days < 2) return "Ieri";
+        if (days < 7) return $"Acum {(int)days} zile";
+        if (days < 30) return $"Acum {(int)(days / 7)} săptămâni";
+        if (days < 365) return $"Acum {(int)(days / 30)} luni";
+        return $"Acum {(int)(days / 365)} ani";
     }
 
     private string BuildJsonLd()
@@ -909,33 +237,36 @@ else
             ? Shop.CoverImage
             : $"{Nav.BaseUri.TrimEnd('/')}{Shop.CoverImage}";
 
+        // Use variables for @-prefixed keys — Razor parser misreads @ in string literals
+        const string atType = "@type";
+        const string atContext = "@context";
         var data = new System.Collections.Generic.Dictionary<string, object>
         {
-            ["@context"] = "https://schema.org",
-            ["@type"]    = "AutoRepair",
-            ["name"]     = Shop.Name,
-            ["description"] = Shop.Description,
-            ["image"]    = absImage,
-            ["url"]      = Nav.Uri,
-            ["telephone"] = Shop.Phone,
-            ["address"]  = new System.Collections.Generic.Dictionary<string, string>
+            [atContext]      = "https://schema.org",
+            [atType]         = "AutoRepair",
+            ["name"]         = Shop.Name,
+            ["description"]  = Shop.Description,
+            ["image"]        = absImage,
+            ["url"]          = Nav.Uri,
+            ["telephone"]    = Shop.Phone,
+            ["address"]      = new System.Collections.Generic.Dictionary<string, string>
             {
-                ["@type"]           = "PostalAddress",
-                ["streetAddress"]   = Shop.Address,
-                ["addressLocality"] = Shop.City,
-                ["addressRegion"]   = Shop.County,
-                ["addressCountry"]  = "RO"
+                [atType]              = "PostalAddress",
+                ["streetAddress"]     = Shop.Address,
+                ["addressLocality"]   = Shop.City,
+                ["addressRegion"]     = Shop.County,
+                ["addressCountry"]    = "RO"
             },
             ["aggregateRating"] = new System.Collections.Generic.Dictionary<string, object>
             {
-                ["@type"]       = "AggregateRating",
+                [atType]        = "AggregateRating",
                 ["ratingValue"] = Shop.Rating,
                 ["reviewCount"] = Shop.ReviewCount
             }
         };
 
         var json = System.Text.Json.JsonSerializer.Serialize(data);
-        return $"<script type=\"application/ld+json\">{json}</script>";
+        // Use concatenation — Razor parser misreads <script> tag in string interpolation
+        return "<script type=\"application/ld+json\">" + json + "</script>";
     }
-
 }

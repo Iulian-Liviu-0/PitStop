@@ -1,0 +1,47 @@
+@if (SimilarShops.Count > 0)
+{
+    <section class="mt-16">
+        <h2 class="font-extrabold text-3xl text-text-main mb-8 tracking-tight"
+            style="font-family: Manrope, sans-serif;">
+            Servicii similare în @City
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            @foreach (var similar in SimilarShops)
+            {
+                <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group border border-border-light">
+                    <div class="relative h-48 overflow-hidden bg-surface-container">
+                        <img src="@similar.ImageUrl" alt="@similar.Name"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase text-text-main">
+                            @similar.Sector
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-text-main mb-2" style="font-family: Manrope, sans-serif;">@similar.Name</h3>
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="material-symbols-outlined text-brand-red text-sm"
+                                  style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="font-bold text-sm">@similar.Rating</span>
+                            <span class="text-xs text-text-muted">(@similar.ReviewCount recenzii)</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            @foreach (var tag in similar.Tags)
+                            {
+                                <span class="bg-surface-container text-secondary px-2 py-0.5 rounded text-[10px] font-bold">@tag</span>
+                            }
+                        </div>
+                        <a href="/serviciu/@similar.Id"
+                           class="block w-full py-2 border border-brand-red text-brand-red font-bold rounded hover:bg-brand-red hover:text-white transition-colors text-sm text-center">
+                            Vezi profil
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public List<SimilarShop> SimilarShops { get; set; } = [];
+    [Parameter] public string City { get; set; } = string.Empty;
+}

@@ -1,0 +1,20 @@
+<div class="bg-white rounded-xl p-6 shadow-sm border border-border-light">
+    <h3 class="font-bold text-lg text-text-main mb-4" style="font-family: Manrope, sans-serif;">Locație</h3>
+    <div class="relative w-full h-[220px] bg-surface-container rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-border-light">
+        <div class="text-center">
+            <span class="material-symbols-outlined text-6xl text-brand-red"
+                  style="font-variation-settings: 'FILL' 1;">location_on</span>
+            <p class="text-sm text-text-muted mt-2 px-4">@Address</p>
+        </div>
+    </div>
+    <a href="https://maps.google.com/?q=@Uri.EscapeDataString(Address)"
+       target="_blank"
+       class="flex items-center justify-center gap-2 text-brand-blue font-bold text-sm hover:underline">
+        <span class="material-symbols-outlined text-lg">open_in_new</span>
+        Deschide în Google Maps
+    </a>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Address { get; set; } = string.Empty;
+}

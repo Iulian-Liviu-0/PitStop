@@ -1,0 +1,20 @@
+<div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
+    <h2 class="font-bold text-2xl text-text-main mb-4" style="font-family: Manrope, sans-serif;">Despre noi</h2>
+    <p class="text-text-muted leading-relaxed mb-6">@Description</p>
+    @if (Brands.Count > 0)
+    {
+        <div class="flex flex-wrap gap-2">
+            @foreach (var brand in Brands)
+            {
+                <span class="bg-secondary-light text-secondary px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide">
+                    @brand
+                </span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Description { get; set; } = string.Empty;
+    [Parameter] public List<string> Brands { get; set; } = [];
+}

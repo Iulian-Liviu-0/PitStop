@@ -1,0 +1,27 @@
+@if (Hours.Count > 0)
+{
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-border-light">
+        <h3 class="font-bold text-lg text-text-main mb-4 flex items-center gap-2"
+            style="font-family: Manrope, sans-serif;">
+            <span class="material-symbols-outlined text-text-muted">schedule</span>
+            Program de funcționare
+        </h3>
+        <div class="space-y-3">
+            @foreach (var day in Hours)
+            {
+                <div class="flex justify-between items-center text-sm @(day.IsToday ? "px-2 py-2 bg-brand-red/5 rounded-lg border-l-4 border-brand-red" : "py-1")">
+                    <span class="@(day.IsToday ? "text-brand-red font-bold" : "text-text-muted")">
+                        @day.DayName @(day.IsToday ? "(Astăzi)" : "")
+                    </span>
+                    <span class="@(day.IsToday ? "text-brand-red font-bold" : day.IsClosed ? "text-red-500 font-bold" : "font-semibold text-text-main")">
+                        @(day.IsClosed ? "Închis" : $"{day.Open} - {day.Close}")
+                    </span>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public List<HourItem> Hours { get; set; } = [];
+}

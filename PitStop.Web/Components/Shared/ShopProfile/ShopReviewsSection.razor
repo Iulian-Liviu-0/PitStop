@@ -1,0 +1,216 @@
+@inject IReviewRepository ReviewRepo
+@inject IShopRepository ShopRepo
+@inject NavigationManager Nav
+
+<div class="bg-white rounded-xl p-8 shadow-sm border border-border-light">
+    <h2 class="font-bold text-2xl text-text-main mb-8" style="font-family: Manrope, sans-serif;">Recenzii clienți</h2>
+
+    <div class="flex flex-col md:flex-row gap-12 mb-10 items-center">
+        <div class="text-center shrink-0">
+            <div class="text-6xl font-black text-text-main leading-none mb-2" style="font-family: Manrope, sans-serif;">@OverallRating</div>
+            <div class="flex justify-center mb-1">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    <span class="material-symbols-outlined text-brand-red" style="font-variation-settings: 'FILL' 1;">star</span>
+                }
+            </div>
+            <div class="text-sm text-text-muted font-medium">@TotalCount recenzii</div>
+        </div>
+        <div class="flex-1 w-full space-y-3">
+            @foreach (var bar in RatingBars)
+            {
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-bold w-4 text-text-main">@bar.Stars</span>
+                    <div class="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
+                        <div class="h-full bg-brand-red rounded-full transition-all duration-500"
+                             style="width: @(bar.Percentage)%"></div>
+                    </div>
+                    <span class="text-sm text-text-muted w-10 text-right">@(bar.Percentage)%</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (Reviews.Count > 0)
+    {
+        <div class="space-y-6 mb-8">
+            @foreach (var review in Reviews)
+            {
+                <div class="bg-surface-bright p-6 rounded-lg border border-border-light">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-12 h-12 rounded-full bg-brand-red-faint flex items-center justify-center font-bold text-brand-red text-sm shrink-0">
+                                @review.Initials
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-text-main">@review.Author</h5>
+                                <p class="text-xs text-text-muted">@review.Date</p>
+                            </div>
+                        </div>
+                        <div class="flex shrink-0">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var starVal = i;
+                                <span class="material-symbols-outlined text-brand-red text-sm"
+                                      style="font-variation-settings: 'FILL' @(starVal <= review.Rating ? "1" : "0");">star</span>
+                            }
+                        </div>
+                    </div>
+                    <p class="text-text-muted text-sm mb-4">@review.Text</p>
+                    @if (review.OwnerResponse is { Length: > 0 })
+                    {
+                        <div class="bg-surface-container border-l-4 border-brand-red rounded-r-lg px-4 py-3 mb-4">
+                            <p class="text-xs font-bold text-brand-red mb-1">Răspunsul proprietarului</p>
+                            <p class="text-sm text-text-main leading-relaxed">@review.OwnerResponse</p>
+                            @if (review.OwnerResponseDate is { Length: > 0 })
+                            {
+                                <p class="text-xs text-text-muted mt-1">@review.OwnerResponseDate</p>
+                            }
+                        </div>
+                    }
+                    <button @onclick="async () => await MarkUseful(review.Id)"
+                            disabled="@_usefulClicked.Contains(review.Id)"
+                            class="flex items-center gap-2 text-sm @(_usefulClicked.Contains(review.Id) ? "text-brand-red" : "text-text-muted hover:text-brand-red") transition-colors">
+                        <span class="material-symbols-outlined text-lg"
+                              style="font-variation-settings: 'FILL' @(_usefulClicked.Contains(review.Id) ? "1" : "0");">thumb_up</span>
+                        <span>Util (@review.UsefulCount)</span>
+                    </button>
+                </div>
+            }
+        </div>
+    }
+
+    <button @onclick="OpenReview"
+            class="w-full py-4 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-all active:scale-[0.98]"
+            style="font-family: Manrope, sans-serif;">
+        Scrie o recenzie
+    </button>
+</div>
+
+@if (_reviewOpen)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="CloseReview">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8" @onclick:stopPropagation="true">
+            <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Scrie o recenzie</h3>
+            <p class="text-text-muted text-sm mb-6">@ShopName</p>
+
+            <div class="flex gap-2 mb-6">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    var star = i;
+                    <button @onclick="() => _newRating = star"
+                            class="text-3xl transition-transform hover:scale-110 active:scale-95">
+                        <span class="material-symbols-outlined text-3xl @(star <= _newRating ? "text-brand-red" : "text-gray-300")"
+                              style="font-variation-settings: 'FILL' 1;">star</span>
+                    </button>
+                }
+            </div>
+
+            <textarea @bind="_newReviewText"
+                      placeholder="Descrie experiența ta cu acest serviciu..."
+                      rows="4"
+                      class="w-full border border-border-light rounded-lg px-4 py-3 text-sm text-text-main placeholder:text-text-muted resize-none focus:outline-none focus:border-brand-red transition-colors mb-2"></textarea>
+
+            @if (_reviewError is { Length: > 0 })
+            {
+                <div class="flex items-center gap-2 bg-brand-red-faint border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red mb-4">
+                    <span class="material-symbols-outlined text-lg">error</span>
+                    @_reviewError
+                </div>
+            }
+
+            <div class="flex gap-3 mt-4">
+                <button @onclick="CloseReview"
+                        class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
+                    Anulează
+                </button>
+                <button @onclick="SubmitReview" disabled="@(_submittingReview || string.IsNullOrWhiteSpace(_newReviewText))"
+                        class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-all text-sm">
+                    @(_submittingReview ? "Se trimite..." : "Publică recenzia")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public int ShopId { get; set; }
+    [Parameter, EditorRequired] public string ShopName { get; set; } = string.Empty;
+    [Parameter] public List<ReviewItem> Reviews { get; set; } = [];
+    [Parameter] public List<RatingBar> RatingBars { get; set; } = [];
+    [Parameter] public double OverallRating { get; set; }
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public bool IsAuthenticated { get; set; }
+    [Parameter] public string UserId { get; set; } = string.Empty;
+    [Parameter] public string UserDisplayName { get; set; } = string.Empty;
+    [Parameter] public string UserInitials { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnReviewSubmitted { get; set; }
+
+    private readonly HashSet<int> _usefulClicked = [];
+    private bool _reviewOpen;
+    private int _newRating = 5;
+    private string _newReviewText = string.Empty;
+    private bool _submittingReview;
+    private string _reviewError = string.Empty;
+
+    private void OpenReview()
+    {
+        if (!IsAuthenticated)
+        {
+            Nav.NavigateTo($"/auth/login?returnUrl={Uri.EscapeDataString($"/serviciu/{ShopId}")}", forceLoad: true);
+            return;
+        }
+        _reviewError = string.Empty;
+        _reviewOpen = true;
+    }
+
+    private void CloseReview()
+    {
+        _reviewOpen = false;
+        _reviewError = string.Empty;
+        _newReviewText = string.Empty;
+        _newRating = 5;
+    }
+
+    private async Task SubmitReview()
+    {
+        if (string.IsNullOrWhiteSpace(_newReviewText)) return;
+        _submittingReview = true;
+        _reviewError = string.Empty;
+        try
+        {
+            var review = new Review
+            {
+                ShopId = ShopId,
+                UserId = UserId,
+                UserName = UserDisplayName,
+                UserInitials = UserInitials,
+                Rating = _newRating,
+                Text = _newReviewText.Trim(),
+            };
+            await ReviewRepo.CreateAsync(review);
+            await ShopRepo.RecalcRatingAsync(ShopId);
+            CloseReview();
+            await OnReviewSubmitted.InvokeAsync();
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+        {
+            // unique index on (ShopId, UserId) prevents duplicate reviews
+            _reviewError = "Ai deja o recenzie pentru acest serviciu.";
+        }
+        finally
+        {
+            _submittingReview = false;
+        }
+    }
+
+    private async Task MarkUseful(int reviewId)
+    {
+        if (_usefulClicked.Contains(reviewId)) return;
+        _usefulClicked.Add(reviewId);
+        await ReviewRepo.IncrementUsefulAsync(reviewId);
+        var idx = Reviews.FindIndex(r => r.Id == reviewId);
+        if (idx >= 0)
+            Reviews[idx] = Reviews[idx] with { UsefulCount = Reviews[idx].UsefulCount + 1 };
+    }
+}

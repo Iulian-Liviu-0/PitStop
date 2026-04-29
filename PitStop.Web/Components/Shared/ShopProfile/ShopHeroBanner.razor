@@ -1,0 +1,104 @@
+@inject IJSRuntime JS
+
+<section class="relative w-full overflow-hidden" style="height: 350px;">
+    <img src="@Shop.CoverImage" alt="@Shop.Name"
+         class="absolute inset-0 w-full h-full object-cover" />
+    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+
+    <div class="absolute top-6 right-6 flex gap-3 z-10">
+        <button @onclick="OnToggleFavorite" disabled="@IsTogglingFavorite"
+                class="flex items-center gap-2 px-4 py-2 border border-white text-white rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md text-sm font-semibold @(IsFavorite ? "bg-white/20" : "")">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' @(IsFavorite ? "1" : "0");">favorite</span>
+            @(IsFavorite ? "Salvat" : "Salvează")
+        </button>
+        <div class="relative">
+            <button @onclick='() => _shareOpen = !_shareOpen'
+                    class="flex items-center gap-2 px-4 py-2 border border-white text-white rounded-lg hover:bg-white/10 transition-colors backdrop-blur-md text-sm font-semibold">
+                <span class="material-symbols-outlined text-xl">share</span>
+                Distribuie
+            </button>
+            @if (_shareOpen)
+            {
+                <div class="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-border-light py-1.5 min-w-[190px] z-20">
+                    <a href="https://wa.me/?text=@Uri.EscapeDataString($"Verifică {Shop.Name} pe PitStop: {PageUrl}")"
+                       target="_blank" rel="noopener"
+                       @onclick='() => _shareOpen = false'
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-main hover:bg-surface-container transition-colors">
+                        <span class="w-5 h-5 text-green-500 font-black text-base leading-none">W</span>
+                        WhatsApp
+                    </a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString(PageUrl)"
+                       target="_blank" rel="noopener"
+                       @onclick='() => _shareOpen = false'
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-main hover:bg-surface-container transition-colors">
+                        <span class="w-5 h-5 text-blue-600 font-black text-base leading-none">f</span>
+                        Facebook
+                    </a>
+                    <div class="my-1 border-t border-border-light"></div>
+                    <button @onclick="CopyLink"
+                            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-main hover:bg-surface-container transition-colors">
+                        <span class="material-symbols-outlined text-base text-text-muted">@(_shareCopied ? "check" : "link")</span>
+                        @(_shareCopied ? "Link copiat!" : "Copiază link")
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="absolute bottom-10 left-0 w-full z-10">
+        <div class="max-w-7xl mx-auto px-6">
+            <span class="inline-block bg-brand-red text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+                @Shop.Category
+            </span>
+            <h1 class="font-black text-5xl text-white tracking-tighter mb-4" style="font-family: Manrope, sans-serif;">
+                @Shop.Name
+            </h1>
+            <div class="flex flex-wrap items-center gap-6 text-white/90">
+                <div class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-brand-red text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+                    <span class="font-bold">@Shop.Rating</span>
+                    <span class="text-sm opacity-80">(@Shop.ReviewCount recenzii)</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-lg">location_on</span>
+                    <span class="text-sm">@Shop.City</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    @if (Shop.IsOpen)
+                    {
+                        <span class="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold uppercase">Deschis acum</span>
+                        @if (!string.IsNullOrEmpty(Shop.ClosingTime))
+                        {
+                            <span class="text-sm opacity-80">Închide la @Shop.ClosingTime</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="bg-red-700 text-white px-2 py-0.5 rounded text-xs font-bold uppercase">Închis</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public ShopProfileData Shop { get; set; } = default!;
+    [Parameter] public bool IsFavorite { get; set; }
+    [Parameter] public bool IsTogglingFavorite { get; set; }
+    [Parameter] public string PageUrl { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnToggleFavorite { get; set; }
+
+    private bool _shareOpen;
+    private bool _shareCopied;
+
+    private async Task CopyLink()
+    {
+        await JS.InvokeVoidAsync("copyToClipboard", PageUrl);
+        _shareCopied = true;
+        _shareOpen = false;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _shareCopied = false;
+    }
+}
