@@ -32,8 +32,8 @@ try
     if (app.Configuration.GetValue<bool>("ResetForRelease"))
         await DataCleaner.ClearAllAsync(app.Services);
 
-    await DataSeeder.SeedAllAsync(app.Services, seedDevData: app.Environment.IsDevelopment());
-
+    if(app.Configuration.GetValue<bool>("SeedData"))
+        await DataSeeder.SeedAllAsync(app.Services);
     if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Error", createScopeForErrors: true);
