@@ -48,9 +48,18 @@ public class ShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<Sho
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query))
-            q = q.Where(s => s.Name.Contains(query) ||
-                              s.Description.Contains(query) ||
-                              s.City.Contains(query));
+        {
+            foreach (var term in query.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var t = term;
+                q = q.Where(s => s.Name.ToLower().Contains(t) ||
+                                  s.Description.ToLower().Contains(t) ||
+                                  s.City.ToLower().Contains(t) ||
+                                  s.Services.Any(sv => sv.Name.ToLower().Contains(t) ||
+                                                       sv.Description.ToLower().Contains(t)) ||
+                                  s.Brands.Any(b => b.Name.ToLower().Contains(t)));
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(county))
             q = q.Where(s => s.County == county);

@@ -91,6 +91,7 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
+    --font-headline: "Manrope", sans-serif;
     --font-body: "Inter", sans-serif;
     --color-brand-red: #C0392B;
     --color-brand-red-dark: #9e2016;
