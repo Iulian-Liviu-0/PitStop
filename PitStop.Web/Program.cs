@@ -143,7 +143,10 @@ app.MapPost("/auth/do-set-password", async (HttpContext ctx, UserManager<Applica
     }
 
     await signInMgr.SignInAsync(user, isPersistent: false);
-    return Results.Redirect("/shop/dashboard");
+    var isAdmin      = await userMgr.IsInRoleAsync(user, "Admin");
+    var isShopOwner  = await userMgr.IsInRoleAsync(user, "ShopOwner");
+    var destination  = isAdmin ? "/admin" : isShopOwner ? "/shop/dashboard" : "/dashboard";
+    return Results.Redirect(destination);
 });
 
 app.MapGet("/auth/google-login", (HttpContext ctx) =>
@@ -170,7 +173,7 @@ app.MapGet("/sitemap.xml", async (HttpContext ctx, IShopRepository shopRepo) =>
 
     var sb = new System.Text.StringBuilder();
     sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    sb.AppendLine("<urlset xmlns=\"https://www.sitemaps.org/schemas/sitemap/0.9\">");
+    sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
 
     foreach (var (url, priority, freq) in staticUrls)
     {
@@ -188,7 +191,7 @@ app.MapGet("/sitemap.xml", async (HttpContext ctx, IShopRepository shopRepo) =>
     await ctx.Response.WriteAsync(sb.ToString());
 });
 
-app.MapPost("/auth/do-forgot-password", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, IEmailService emailSvc, NavigationManager nav) =>
+app.MapPost("/auth/do-forgot-password", async (HttpContext ctx, UserManager<ApplicationUser> userMgr, IEmailService emailSvc) =>
 {
     var form  = await ctx.Request.ReadFormAsync();
     var email = form["email"].ToString().Trim();
@@ -389,7 +392,7 @@ static async Task SeedShopsAsync(IServiceProvider services)
             Description = "Vulcanizare rapidă non-stop în București. Montaj anvelope, echilibrare, geometrie roți și reparații urgente.",
             Address = "Bd. Iuliu Maniu nr. 15",
             City = "București",
-            County = "Ilfov",
+            County = "București",
             Phone = "0721-456789",
             Email = "titan@vulcanizare.ro",
             Category = ShopCategory.Vulcanizare,

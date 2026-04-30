@@ -29,7 +29,8 @@
                 <span class="material-symbols-outlined text-brand-red shrink-0">language</span>
                 <div>
                     <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Website</p>
-                    <a href="https://@Website" target="_blank"
+                    <a href="@(Website.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? Website : "https://" + Website)"
+                       target="_blank"
                        class="text-brand-red font-semibold hover:underline">@Website</a>
                 </div>
             </div>
