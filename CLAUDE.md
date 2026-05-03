@@ -4,10 +4,11 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Pending work (not yet implemented)
 
-- **Email sending** — When an admin approves a shop request, the owner should
-  receive an automated email with an account setup link. No mailer is wired yet.
-  Recommended: use `MailKit` + `MimeKit` with SMTP (or SendGrid/Mailgun for prod).
-  The trigger point is `Admin/Dashboard.razor` when `ApproveRequestAsync` is called.
+- **Email sending** — `IEmailService` / `SmtpEmailService` (MailKit) is wired and called in
+  `Admin/Dashboard.razor` on shop request approval. SMTP credentials must be configured in
+  `appsettings.json` (`Email:Host`, `Email:Port`, `Email:Username`, `Email:Password`,
+  `Email:From`) for emails to actually send — failures are silently swallowed so approval
+  is never blocked.
 - **Google OAuth** — The login button is UI-only. To wire it up, register a
   Google OAuth app, add `AddGoogle(...)` in `Program.cs`, and handle the callback.
   The callback should create/link the ASP.NET Identity user and sign them in.
@@ -68,15 +69,15 @@ The app is in Romanian and targets the Romanian market only.
 - See profile view statistics
 - Manage contact details
 - Manage brand/make associations
+- Red banner shown when shop is disabled by admin, including the reason
 
 ### 🔐 Admin Dashboard
 - View all pending shop requests in a table
 - Approve or reject requests with optional note
-- View and manage all listed shops
-- Activate or deactivate any listing
-- View and manage all registered users
-- Overview stats: total shops, pending requests,
-  active users, total reviews
+- View and manage all listed shops (search, edit, activate/deactivate with reason)
+- View and manage all registered users (search, edit, reset password, lock, soft-disable with reason, restore)
+- Overview stats: total shops, pending requests, active users, total reviews
+- **SuperAdmin** tier: cannot be deleted or demoted by regular admins; only SuperAdmin can manage Admin-role users
 
 ### 📱 Mobile & Responsive
 - Fully responsive on mobile, tablet, and desktop
@@ -149,6 +150,10 @@ dotnet ef migrations add <Name> --project PitStop.Infrastructure --startup-proje
 dotnet ef database update --project PitStop.Infrastructure --startup-project PitStop.Web
 ```
 
+> **SQLite + migrations:** The SQLite dev path uses `EnsureCreated()` (no migration history). If you add a migration and need to apply it locally, delete `PitStop.Web/pitstop_dev.db` and restart — `EnsureCreated()` will recreate the schema. Migrations apply normally to PostgreSQL.
+>
+> **`Directory.Build.props`** at the solution root sets `<AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>` to suppress a .NET 10 RC SDK error that breaks `dotnet ef` and `dotnet build`.
+
 ## UI
 
 - All pages in `PitStop.Web/Components/Pages/`
@@ -211,8 +216,8 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 - **`Contact.razor`** — Blazor form with `@onsubmit` + success/error state. All four fields (name, email, subject, message) are validated before submit; shows inline error on failure. FAQ accordion driven by `OpenFaq` (int?) — one item open at a time. Form data is saved to DB via `IShopRequestRepository.CreateAsync` only when subject is `"listing"` — other subjects show the success message but have no backend handler (email sending not yet implemented).
 - **`AboutUs.razor`** — static page: mission/vision, process steps, hardcoded team member cards (Alexandru Popescu/CEO, Mihai Ionescu/Lead Dev, Elena Radu/Community Manager), CTA.
 - **`User/Dashboard.razor`** — favorites list, review history (with inline edit), profile settings (name/email), password change. Auth guard in `OnInitializedAsync` via `AuthenticationStateProvider`.
-- **`Shop/Dashboard.razor`** — profile editing (including brands), services CRUD, hours management (per day), photos tab (upload/delete/set cover), reviews viewing. Uses internal `HourRow` class with `string OpenTime`/`CloseTime` (format `"HH:mm"`). `<input type="time">` uses `value`/`@onchange` instead of `@bind` — Blazor infers `DateTime` for time inputs when using `@bind` on string properties.
-- **`Admin/Dashboard.razor`** — pending shop requests table (approve/reject with note), all shops list (activate/deactivate), all users list, overview stats. Reject panel toggled via `_rejectingId`.
+- **`Shop/Dashboard.razor`** — profile editing (including brands), services CRUD, hours management (per day), photos tab (upload/delete/set cover), reviews viewing. Uses internal `HourRow` class with `string OpenTime`/`CloseTime` (format `"HH:mm"`). `<input type="time">` uses `value`/`@onchange` instead of `@bind` — Blazor infers `DateTime` for time inputs when using `@bind` on string properties. Shows a red disabled banner (with reason) when `Status == Inactive`.
+- **`Admin/Dashboard.razor`** — accessible to both `Admin` and `SuperAdmin` roles (`_isSuperAdmin` flag drives elevated actions). Tabs: Cereri, Servicii, Utilizatori, Recenzii. Shops tab: search, edit modal (`UpdateProfileAsync`), disable-with-reason modal, activate. Users tab: Activi/Dezactivați toggle, search, edit modal (FullName + email via `UserManager`), reset-password modal (generates `/auth/set-password` link), lock/unlock (no reason), soft-disable-with-reason modal, restore. Role enforcement: SuperAdmin rows have no actions; Admin rows only actionable by SuperAdmin; `Admin` option in role dropdown only shown to SuperAdmin. Reject panel toggled via `_rejectingId`.
 
 ### Shared Components
 
@@ -277,7 +282,7 @@ Set `"DatabaseProvider": "Sqlite"` in `appsettings.Development.json` to use SQLi
    - Password: `RequireDigit=true`, `MinimumLength=8`, `RequireUppercase=false`
    - User: `RequireUniqueEmail=true`
 4. `ConfigureApplicationCookie` — `LoginPath=/auth/login`, `AccessDeniedPath=/auth/access-denied`, 30-day sliding expiration
-5. `AddAuthorization` with policies: `"ShopOwner"` (requires role ShopOwner), `"Admin"` (requires role Admin)
+5. `AddAuthorization` with policies: `"ShopOwner"` (requires role ShopOwner), `"Admin"` (requires role Admin), `"SuperAdmin"` (requires role SuperAdmin)
 6. All repositories as `AddScoped`; `IFileStorage → LocalFileStorage` as `AddScoped`
 
 ### Middleware order
@@ -294,9 +299,13 @@ Set `"DatabaseProvider": "Sqlite"` in `appsettings.Development.json` to use SQLi
 
 ### Role seeding
 
-`SeedRolesAsync` runs after `app.Build()`, creates roles `Admin`, `ShopOwner`, `User` if they don't exist. Uses `CreateAsyncScope` to avoid DI lifetime issues.
+`SeedRolesAsync` runs after `app.Build()`, creates roles `SuperAdmin`, `Admin`, `ShopOwner`, `User` if they don't exist.
 
-`SeedAdminAsync` runs immediately after, creates a default admin user (`admin@pitstop.ro` / `Admin1234!`) if one doesn't exist and assigns the `Admin` role. Safe to leave in production — no-op if user already exists.
+`SeedAdminAsync` creates `julian@pitstop.ro` / `juliandev0011!` with role `Admin` if it doesn't exist.
+
+`SeedSuperAdminAsync` creates `superadmin@pitstop.ro` / `SuperAdmin1234!` with role `SuperAdmin` if it doesn't exist.
+
+All seeders are no-ops if the user already exists — safe to leave enabled in production.
 
 ## Domain
 
@@ -305,7 +314,7 @@ Entities in `PitStop.Domain/Entities/`:
 | Entity | Inherits | Key fields |
 |---|---|---|
 | `BaseEntity` | — | `Id` (int), `CreatedAt`, `UpdatedAt` |
-| `Shop` | `BaseEntity` | `Name`, `Description`, `Address`, `City`, `County`, `Phone`, `Email`, `Website?`, `CoverImage?`, `Category`, `Status`, `OwnerId?`, `AverageRating`, `ReviewCount` |
+| `Shop` | `BaseEntity` | `Name`, `Description`, `Address`, `City`, `County`, `Phone`, `Email`, `Website?`, `CoverImage?`, `Category`, `Status`, `DisabledReason?`, `OwnerId?`, `AverageRating`, `ReviewCount` |
 | `Review` | `BaseEntity` | `ShopId`, `UserId`, `UserName`, `UserInitials`, `Rating` (1–5), `Text`, `UsefulCount` |
 | `ShopPhoto` | `BaseEntity` | `ShopId`, `Url`, `DisplayOrder` |
 | `ShopService` | `BaseEntity` | `ShopId`, `Name`, `Description`, `PriceMin`, `PriceMax` (decimal) |
@@ -329,7 +338,9 @@ Notes:
 ## Infrastructure
 
 ### Identity
-`PitStop.Infrastructure/Identity/ApplicationUser.cs` — extends `IdentityUser`, adds `FullName`, `CreatedAt`, `ProfilePhoto?`.
+`PitStop.Infrastructure/Identity/ApplicationUser.cs` — extends `IdentityUser`, adds `FullName`, `CreatedAt`, `ProfilePhoto?`, `IsDisabled`, `DisabledReason?`, `DisabledAt?`, `DisabledByAdminId?`.
+
+Soft-disable pattern: when an admin disables a user, `IsDisabled = true`, reason and metadata are stored, and `LockoutEnd = DateTimeOffset.MaxValue` prevents login. Restore clears all four fields and unlocks.
 
 ### DbContext
 `PitStop.Infrastructure/Data/AppDbContext.cs` — extends `IdentityDbContext<ApplicationUser>`.
@@ -377,7 +388,7 @@ Interfaces live in `PitStop.Application/Interfaces/`. Implementations take `IDbC
 - `CreateAsync`, `UpdateAsync`, `UpdateProfileAsync`, `DeleteAsync`
 - `AddServiceAsync`, `UpdateServiceAsync`, `DeleteServiceAsync`
 - `UpsertHoursAsync(shopId, hours)` — replaces all hours for a shop
-- `SetStatusAsync(shopId, status)`
+- `SetStatusAsync(shopId, status, reason?)` — writes `DisabledReason` when setting `Inactive`, clears it otherwise
 - `GetSiteStatsAsync()` — returns `(ShopCount, CountyCount, AvgRating, ReviewCount)` for StatsSection
 - `RecalcRatingAsync(shopId)` — single GroupBy query to recompute `AverageRating` + `ReviewCount` on Shop; call after any review write
 - `AddPhotoAsync(photo)`, `DeletePhotoAsync(photoId)`, `SetCoverImageAsync(shopId, url?)`
