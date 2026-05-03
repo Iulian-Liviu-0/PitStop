@@ -217,7 +217,7 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 - **`AboutUs.razor`** — static page: mission/vision, process steps, hardcoded team member cards (Alexandru Popescu/CEO, Mihai Ionescu/Lead Dev, Elena Radu/Community Manager), CTA.
 - **`User/Dashboard.razor`** — favorites list, review history (with inline edit), profile settings (name/email), password change. Auth guard in `OnInitializedAsync` via `AuthenticationStateProvider`.
 - **`Shop/Dashboard.razor`** — profile editing (including brands), services CRUD, hours management (per day), photos tab (upload/delete/set cover), reviews viewing. Uses internal `HourRow` class with `string OpenTime`/`CloseTime` (format `"HH:mm"`). `<input type="time">` uses `value`/`@onchange` instead of `@bind` — Blazor infers `DateTime` for time inputs when using `@bind` on string properties. Shows a red disabled banner (with reason) when `Status == Inactive`.
-- **`Admin/Dashboard.razor`** — accessible to both `Admin` and `SuperAdmin` roles (`_isSuperAdmin` flag drives elevated actions). Tabs: Cereri, Servicii, Utilizatori, Recenzii. Shops tab: search, edit modal (`UpdateProfileAsync`), disable-with-reason modal, activate. Users tab: Activi/Dezactivați toggle, search, edit modal (FullName + email via `UserManager`), reset-password modal (generates `/auth/set-password` link), lock/unlock (no reason), soft-disable-with-reason modal, restore. Role enforcement: SuperAdmin rows have no actions; Admin rows only actionable by SuperAdmin; `Admin` option in role dropdown only shown to SuperAdmin. Reject panel toggled via `_rejectingId`.
+- **`Admin/Dashboard.razor`** — accessible to both `Admin` and `SuperAdmin` roles (`_isSuperAdmin` flag drives elevated actions). Tabs: Cereri, Servicii, Utilizatori, Recenzii. Shops tab: search, edit modal (`UpdateProfileAsync` + `SetCategoryAsync` for Category field), disable-with-reason modal, activate. Users tab: Activi/Dezactivați toggle, search, edit modal (FullName + email via `UserManager`), reset-password modal (generates `/auth/set-password` link), lock/unlock (no reason), soft-disable-with-reason modal, restore. Role enforcement: SuperAdmin rows have no actions; Admin rows only actionable by SuperAdmin; `Admin` option in role dropdown only shown to SuperAdmin. Reject panel toggled via `_rejectingId`.
 
 ### Shared Components
 
@@ -389,6 +389,7 @@ Interfaces live in `PitStop.Application/Interfaces/`. Implementations take `IDbC
 - `AddServiceAsync`, `UpdateServiceAsync`, `DeleteServiceAsync`
 - `UpsertHoursAsync(shopId, hours)` — replaces all hours for a shop
 - `SetStatusAsync(shopId, status, reason?)` — writes `DisabledReason` when setting `Inactive`, clears it otherwise
+- `SetCategoryAsync(shopId, category)` — updates `Category` via `ExecuteUpdateAsync`; used by admin edit shop modal
 - `GetSiteStatsAsync()` — returns `(ShopCount, CountyCount, AvgRating, ReviewCount)` for StatsSection
 - `RecalcRatingAsync(shopId)` — single GroupBy query to recompute `AverageRating` + `ReviewCount` on Shop; call after any review write
 - `AddPhotoAsync(photo)`, `DeletePhotoAsync(photoId)`, `SetCoverImageAsync(shopId, url?)`
