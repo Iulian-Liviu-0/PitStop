@@ -8,15 +8,15 @@ namespace PitStop.Web.Seeding;
 internal static class DataCleaner
 {
     /// <summary>
-    /// Deletes all shop data, reviews, requests, and non-admin users.
-    /// Roles and the admin account are preserved.
-    /// Trigger by setting "ResetForRelease": true in appsettings before one startup.
+    ///     Deletes all shop data, reviews, requests, and non-admin users.
+    ///     Roles and the admin account are preserved.
+    ///     Trigger by setting "ResetForRelease": true in appsettings before one startup.
     /// </summary>
     internal static async Task ClearAllAsync(IServiceProvider services)
     {
         await using var scope = services.CreateAsyncScope();
-        var db                = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var userManager       = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         // Delete child tables before parent to avoid FK violations.
         await db.ShopBrands.ExecuteDeleteAsync();
@@ -36,6 +36,7 @@ internal static class DataCleaner
             if (!roles.Contains("Admin"))
                 toDelete.Add(user);
         }
+
         foreach (var user in toDelete)
             await userManager.DeleteAsync(user);
     }

@@ -4,5 +4,5 @@ public enum ShopRequestStatus
 {
     Pending,
     Approved,
-    Rejected,
+    Rejected
 }

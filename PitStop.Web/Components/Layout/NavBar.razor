@@ -55,7 +55,7 @@
                 </a>
                 <div class="w-px h-8 bg-border-light mx-1"></div>
                 <form method="post" action="/auth/do-logout">
-                    <AntiforgeryToken />
+                    <AntiforgeryToken/>
                     <button type="submit"
                             class="font-bold text-sm border-2 border-brand-red text-brand-red hover:bg-brand-red hover:text-white transition-all px-5 py-2 rounded">
                         Deconectare
@@ -112,15 +112,17 @@
                 }
                 else if (_isShopOwner)
                 {
-                    <a href="/shop/dashboard" class="font-bold text-sm text-text-muted hover:text-brand-red">Dashboard</a>
+                    <a href="/shop/dashboard"
+                       class="font-bold text-sm text-text-muted hover:text-brand-red">Dashboard</a>
                 }
                 else
                 {
                     <a href="/dashboard" class="font-bold text-sm text-text-muted hover:text-brand-red">Contul meu</a>
                 }
+
                 <span class="text-sm font-medium text-text-muted">@_userName</span>
                 <form method="post" action="/auth/do-logout">
-                    <AntiforgeryToken />
+                    <AntiforgeryToken/>
                     <button type="submit" class="font-bold text-sm text-brand-red text-left">
                         Deconectare
                     </button>
@@ -137,7 +139,7 @@
 </nav>
 
 @code {
-    private bool mobileMenuOpen = false;
+    private bool mobileMenuOpen;
     private bool _isAuthenticated;
     private string? _userName;
     private bool _isAdmin;
@@ -157,5 +159,9 @@
         }
     }
 
-    private void ToggleMobileMenu() => mobileMenuOpen = !mobileMenuOpen;
+    private void ToggleMobileMenu()
+    {
+        mobileMenuOpen = !mobileMenuOpen;
+    }
+
 }

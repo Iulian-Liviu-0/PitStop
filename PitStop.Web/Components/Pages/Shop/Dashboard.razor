@@ -1,4 +1,5 @@
 @page "/shop/dashboard"
+@using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
 @rendermode InteractiveServer
 @inject NavigationManager Nav
@@ -20,9 +21,12 @@ else if (_shop is null)
 {
     <div class="min-h-screen bg-surface flex flex-col items-center justify-center gap-4 text-center px-6">
         <span class="material-symbols-outlined text-6xl text-text-muted">store_off</span>
-        <h1 class="font-bold text-2xl text-text-main" style="font-family: Manrope, sans-serif;">Niciun serviciu asociat</h1>
-        <p class="text-text-muted max-w-md">Contul tău nu este asociat cu niciun serviciu. Contactează echipa PitStop pentru a finaliza configurarea.</p>
-        <a href="/contact" class="mt-2 bg-brand-red text-white font-bold px-6 py-3 rounded-lg text-sm hover:bg-brand-red-dark transition-colors">
+        <h1 class="font-bold text-2xl text-text-main" style="font-family: Manrope, sans-serif;">Niciun serviciu
+            asociat</h1>
+        <p class="text-text-muted max-w-md">Contul tău nu este asociat cu niciun serviciu. Contactează echipa PitStop
+            pentru a finaliza configurarea.</p>
+        <a href="/contact"
+           class="mt-2 bg-brand-red text-white font-bold px-6 py-3 rounded-lg text-sm hover:bg-brand-red-dark transition-colors">
             Contactează-ne
         </a>
     </div>
@@ -34,7 +38,8 @@ else
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Dashboard serviciu</p>
-                <h1 class="font-black text-3xl tracking-tight" style="font-family: Manrope, sans-serif;">@_shop.Name</h1>
+                <h1 class="font-black text-3xl tracking-tight"
+                    style="font-family: Manrope, sans-serif;">@_shop.Name</h1>
                 <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold @ShopStatusClass(_shop.Status)">
                     @ShopStatusLabel(_shop.Status)
                 </span>
@@ -53,7 +58,8 @@ else
             <div class="bg-brand-red-faint border-l-4 border-brand-red rounded-r-xl px-6 py-5 flex items-start gap-3">
                 <span class="material-symbols-outlined text-brand-red mt-0.5">block</span>
                 <div>
-                    <h2 class="font-bold text-brand-red" style="font-family: Manrope, sans-serif;">Serviciul tău a fost dezactivat</h2>
+                    <h2 class="font-bold text-brand-red" style="font-family: Manrope, sans-serif;">Serviciul tău a fost
+                        dezactivat</h2>
                     @if (_shop.DisabledReason is { Length: > 0 })
                     {
                         <p class="text-sm text-text-muted mt-1">Motiv: @_shop.DisabledReason</p>
@@ -89,34 +95,38 @@ else
                         <span class="material-symbols-outlined text-brand-red text-2xl">visibility</span>
                         <div>
                             <p class="text-xs text-text-muted">Vizualizări profil</p>
-                            <p class="font-black text-xl text-text-main" style="font-family: Manrope, sans-serif;">@_shop!.ViewCount</p>
+                            <p class="font-black text-xl text-text-main"
+                               style="font-family: Manrope, sans-serif;">@_shop!.ViewCount</p>
                         </div>
                     </div>
                     <div class="bg-white rounded-xl border border-border-light p-4 flex items-center gap-3">
                         <span class="material-symbols-outlined text-brand-red text-2xl">star</span>
                         <div>
                             <p class="text-xs text-text-muted">Rating mediu</p>
-                            <p class="font-black text-xl text-text-main" style="font-family: Manrope, sans-serif;">@_shop.AverageRating.ToString("0.0")</p>
+                            <p class="font-black text-xl text-text-main"
+                               style="font-family: Manrope, sans-serif;">@_shop.AverageRating.ToString("0.0")</p>
                         </div>
                     </div>
                     <div class="bg-white rounded-xl border border-border-light p-4 flex items-center gap-3">
                         <span class="material-symbols-outlined text-brand-red text-2xl">rate_review</span>
                         <div>
                             <p class="text-xs text-text-muted">Recenzii</p>
-                            <p class="font-black text-xl text-text-main" style="font-family: Manrope, sans-serif;">@_reviewTotal</p>
+                            <p class="font-black text-xl text-text-main"
+                               style="font-family: Manrope, sans-serif;">@_reviewTotal</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
-                    <h2 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Informații profil</h2>
+                    <h2 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">
+                        Informații profil</h2>
 
                     <div class="flex flex-col gap-5">
                         <!-- Name -->
                         <div class="flex flex-col gap-1.5">
                             <label class="text-sm font-semibold text-text-main">Nume serviciu</label>
                             <input @bind="_pName" type="text"
-                                   class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                   class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                         </div>
 
                         <!-- Description -->
@@ -131,12 +141,12 @@ else
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-sm font-semibold text-text-main">Adresă</label>
                                 <input @bind="_pAddress" type="text"
-                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-sm font-semibold text-text-main">Oraș</label>
                                 <input @bind="_pCity" type="text"
-                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                             </div>
                         </div>
 
@@ -156,7 +166,7 @@ else
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-sm font-semibold text-text-main">Sector (opțional)</label>
                                 <input @bind="_pSector" type="text"
-                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                             </div>
                         </div>
 
@@ -165,12 +175,12 @@ else
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-sm font-semibold text-text-main">Telefon</label>
                                 <input @bind="_pPhone" type="tel"
-                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-sm font-semibold text-text-main">Email</label>
                                 <input @bind="_pEmail" type="email"
-                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                       class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                             </div>
                         </div>
 
@@ -178,7 +188,7 @@ else
                         <div class="flex flex-col gap-1.5">
                             <label class="text-sm font-semibold text-text-main">Website (opțional)</label>
                             <input @bind="_pWebsite" type="url" placeholder="https://..."
-                                   class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                                   class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                         </div>
 
                         <!-- Brands -->
@@ -189,20 +199,23 @@ else
                                 <div class="flex flex-wrap gap-2">
                                     @foreach (var brand in _brands)
                                     {
-                                        <span class="inline-flex items-center gap-1 bg-surface-container text-text-main text-sm px-3 py-1.5 rounded-full">
+                                        <span
+                                            class="inline-flex items-center gap-1 bg-surface-container text-text-main text-sm px-3 py-1.5 rounded-full">
                                             @brand.Name
                                             <button @onclick="async () => await RemoveBrand(brand)"
                                                     class="text-text-muted hover:text-brand-red transition-colors ml-0.5">
-                                                <span class="material-symbols-outlined text-base leading-none">close</span>
+                                                <span
+                                                    class="material-symbols-outlined text-base leading-none">close</span>
                                             </button>
                                         </span>
                                     }
                                 </div>
                             }
                             <div class="flex gap-2">
-                                <input @bind="_newBrandName" @bind:event="oninput" placeholder="ex: BMW, Dacia, Toyota..."
+                                <input @bind="_newBrandName" @bind:event="oninput"
+                                       placeholder="ex: BMW, Dacia, Toyota..."
                                        @onkeydown="HandleBrandKeyDown"
-                                       class="flex-1 border border-border-light rounded-lg px-4 py-2 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red transition-colors" />
+                                       class="flex-1 border border-border-light rounded-lg px-4 py-2 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red transition-colors"/>
                                 <button @onclick="AddBrand" disabled="@(string.IsNullOrWhiteSpace(_newBrandName))"
                                         class="px-4 py-2 bg-brand-red text-white text-sm font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-colors">
                                     Adaugă
@@ -212,7 +225,8 @@ else
 
                         @if (_profileSaved)
                         {
-                            <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                            <div
+                                class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
                                 <span class="material-symbols-outlined text-lg">check_circle</span>
                                 Profilul a fost salvat cu succes.
                             </div>
@@ -231,7 +245,8 @@ else
             <div class="max-w-3xl flex flex-col gap-4">
                 <!-- Add button -->
                 <div class="flex justify-between items-center">
-                    <h2 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">Servicii oferite</h2>
+                    <h2 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">Servicii
+                        oferite</h2>
                     <button @onclick="() => _isAdding = !_isAdding"
                             class="inline-flex items-center gap-2 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-sm px-4 py-2.5 rounded-lg transition-colors">
                         <span class="material-symbols-outlined text-base">@(_isAdding ? "close" : "add")</span>
@@ -248,22 +263,22 @@ else
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-xs font-semibold text-text-warm">Denumire *</label>
                                 <input @bind="_newName" placeholder="ex: Schimb ulei"
-                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-xs font-semibold text-text-warm">Descriere</label>
                                 <input @bind="_newDescription" placeholder="Scurtă descriere..."
-                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-xs font-semibold text-text-warm">Preț minim (RON)</label>
                                 <input @bind="_newPriceMin" type="number" min="0" placeholder="0"
-                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-xs font-semibold text-text-warm">Preț maxim (RON)</label>
                                 <input @bind="_newPriceMax" type="number" min="0" placeholder="0"
-                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                             </div>
                         </div>
                         <button @onclick="AddService" disabled="@(string.IsNullOrWhiteSpace(_newName))"
@@ -276,7 +291,8 @@ else
                 <!-- Services list -->
                 @if (_services.Count == 0)
                 {
-                    <div class="bg-white rounded-xl border border-border-light flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                    <div
+                        class="bg-white rounded-xl border border-border-light flex flex-col items-center justify-center py-16 text-text-muted gap-2">
                         <span class="material-symbols-outlined text-4xl">build_circle</span>
                         <p class="text-sm">Niciun serviciu adăugat încă.</p>
                     </div>
@@ -293,22 +309,22 @@ else
                                         <div class="flex flex-col gap-1.5">
                                             <label class="text-xs font-semibold text-text-warm">Denumire</label>
                                             <input @bind="svc.EditName"
-                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                                         </div>
                                         <div class="flex flex-col gap-1.5">
                                             <label class="text-xs font-semibold text-text-warm">Descriere</label>
                                             <input @bind="svc.EditDescription"
-                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                                         </div>
                                         <div class="flex flex-col gap-1.5">
                                             <label class="text-xs font-semibold text-text-warm">Preț minim (RON)</label>
                                             <input @bind="svc.EditPriceMin" type="number" min="0"
-                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                                         </div>
                                         <div class="flex flex-col gap-1.5">
                                             <label class="text-xs font-semibold text-text-warm">Preț maxim (RON)</label>
                                             <input @bind="svc.EditPriceMax" type="number" min="0"
-                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                                   class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                                         </div>
                                     </div>
                                     <div class="flex gap-2">
@@ -355,7 +371,8 @@ else
         {
             <div class="max-w-2xl">
                 <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
-                    <h2 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Program de funcționare</h2>
+                    <h2 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Program
+                        de funcționare</h2>
 
                     <div class="flex flex-col gap-3">
                         @foreach (var row in _hours)
@@ -364,17 +381,19 @@ else
                                 <span class="w-20 text-sm font-semibold text-text-main shrink-0">@row.DayName</span>
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" @bind="row.IsClosed"
-                                           class="h-4 w-4 rounded border-gray-300 text-brand-red focus:ring-brand-red" />
+                                           class="h-4 w-4 rounded border-gray-300 text-brand-red focus:ring-brand-red"/>
                                     <span class="text-sm text-text-muted">Închis</span>
                                 </label>
                                 @if (!row.IsClosed)
                                 {
                                     <div class="flex items-center gap-2 ml-auto">
-                                        <input type="time" value="@row.OpenTime" @onchange="e => row.OpenTime = e.Value?.ToString() ?? string.Empty"
-                                               class="border border-border-light rounded px-3 py-1.5 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                        <input type="time" value="@row.OpenTime"
+                                               @onchange="e => row.OpenTime = e.Value?.ToString() ?? string.Empty"
+                                               class="border border-border-light rounded px-3 py-1.5 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                                         <span class="text-text-muted text-sm">–</span>
-                                        <input type="time" value="@row.CloseTime" @onchange="e => row.CloseTime = e.Value?.ToString() ?? string.Empty"
-                                               class="border border-border-light rounded px-3 py-1.5 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                                        <input type="time" value="@row.CloseTime"
+                                               @onchange="e => row.CloseTime = e.Value?.ToString() ?? string.Empty"
+                                               class="border border-border-light rounded px-3 py-1.5 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red"/>
                                     </div>
                                 }
                             </div>
@@ -383,7 +402,8 @@ else
 
                     @if (_hoursSaved)
                     {
-                        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 mt-5">
+                        <div
+                            class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 mt-5">
                             <span class="material-symbols-outlined text-lg">check_circle</span>
                             Programul a fost salvat cu succes.
                         </div>
@@ -401,17 +421,22 @@ else
             <!-- Photos tab -->
             <div class="max-w-3xl">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">Fotografii</h2>
-                    <label class="inline-flex items-center gap-2 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-sm px-4 py-2.5 rounded-lg transition-colors cursor-pointer @(_uploading ? "opacity-50 pointer-events-none" : "")">
-                        <span class="material-symbols-outlined text-base">@(_uploading ? "progress_activity" : "upload")</span>
+                    <h2 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">
+                        Fotografii</h2>
+                    <label
+                        class="inline-flex items-center gap-2 bg-brand-red hover:bg-brand-red-dark text-white font-bold text-sm px-4 py-2.5 rounded-lg transition-colors cursor-pointer @(_uploading ? "opacity-50 pointer-events-none" : "")">
+                        <span
+                            class="material-symbols-outlined text-base">@(_uploading ? "progress_activity" : "upload")</span>
                         @(_uploading ? "Se încarcă..." : "Adaugă fotografii")
-                        <InputFile OnChange="HandlePhotoUpload" accept="image/*" multiple class="hidden" disabled="@_uploading" />
+                        <InputFile OnChange="HandlePhotoUpload" accept="image/*" multiple class="hidden"
+                                   disabled="@_uploading"/>
                     </label>
                 </div>
 
                 @if (_uploadError is { Length: > 0 })
                 {
-                    <div class="flex items-center gap-2 bg-brand-red-faint border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red mb-4">
+                    <div
+                        class="flex items-center gap-2 bg-brand-red-faint border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red mb-4">
                         <span class="material-symbols-outlined text-lg">error</span>
                         @_uploadError
                     </div>
@@ -419,24 +444,28 @@ else
 
                 @if (_photos.Count == 0)
                 {
-                    <div class="bg-white rounded-xl border border-border-light flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                    <div
+                        class="bg-white rounded-xl border border-border-light flex flex-col items-center justify-center py-16 text-text-muted gap-2">
                         <span class="material-symbols-outlined text-4xl">photo_library</span>
-                        <p class="text-sm">Nicio fotografie adăugată încă. Adaugă prima fotografie a serviciului tău.</p>
+                        <p class="text-sm">Nicio fotografie adăugată încă. Adaugă prima fotografie a serviciului
+                            tău.</p>
                     </div>
                 }
                 else
                 {
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         @{ var orderedPhotos = _photos.OrderBy(p => p.DisplayOrder).ToList(); }
-                        @for (int pi = 0; pi < orderedPhotos.Count; pi++)
+                        @for (var pi = 0; pi < orderedPhotos.Count; pi++)
                         {
                             var photo = orderedPhotos[pi];
                             var index = pi;
-                            <div class="relative group rounded-xl overflow-hidden border @(_shop!.CoverImage == photo.Url ? "border-brand-red ring-2 ring-brand-red" : "border-border-light")">
-                                <img src="@photo.Url" alt="Fotografie serviciu" class="w-full h-44 object-cover" />
+                            <div
+                                class="relative group rounded-xl overflow-hidden border @(_shop!.CoverImage == photo.Url ? "border-brand-red ring-2 ring-brand-red" : "border-border-light")">
+                                <img src="@photo.Url" alt="Fotografie serviciu" class="w-full h-44 object-cover"/>
                                 @if (_shop!.CoverImage == photo.Url)
                                 {
-                                    <div class="absolute top-2 left-2 bg-brand-red text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                    <div
+                                        class="absolute top-2 left-2 bg-brand-red text-white text-[10px] font-bold px-2 py-0.5 rounded">
                                         Copertă
                                     </div>
                                 }
@@ -457,10 +486,12 @@ else
                                         </button>
                                     }
                                 </div>
-                                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                <div
+                                    class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                                     @if (_shop.CoverImage != photo.Url)
                                     {
-                                        <button @onclick="async () => await SetCover(photo)" title="Setează ca fotografie principală"
+                                        <button @onclick="async () => await SetCover(photo)"
+                                                title="Setează ca fotografie principală"
                                                 class="w-9 h-9 bg-white rounded-full flex items-center justify-center text-text-main hover:bg-brand-red hover:text-white transition-colors">
                                             <span class="material-symbols-outlined text-lg">star</span>
                                         </button>
@@ -473,7 +504,8 @@ else
                             </div>
                         }
                     </div>
-                    <p class="text-xs text-text-muted mt-4">Fotografia marcată cu ★ apare ca imagine principală pe profil. Folosește săgețile pentru a reordona fotografiile.</p>
+                    <p class="text-xs text-text-muted mt-4">Fotografia marcată cu ★ apare ca imagine principală pe
+                        profil. Folosește săgețile pentru a reordona fotografiile.</p>
                 }
             </div>
         }
@@ -495,7 +527,8 @@ else
                         <div class="bg-white rounded-xl border border-border-light p-5">
                             <div class="flex items-start justify-between gap-3 mb-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-brand-red-faint text-brand-red flex items-center justify-center text-xs font-bold shrink-0">
+                                    <div
+                                        class="w-9 h-9 rounded-full bg-brand-red-faint text-brand-red flex items-center justify-center text-xs font-bold shrink-0">
                                         @rev.UserInitials
                                     </div>
                                     <div>
@@ -504,10 +537,11 @@ else
                                     </div>
                                 </div>
                                 <div class="flex gap-0.5 shrink-0">
-                                    @for (int i = 1; i <= 5; i++)
+                                    @for (var i = 1; i <= 5; i++)
                                     {
-                                        <span class="material-symbols-outlined text-base @(i <= rev.Rating ? "text-brand-red" : "text-gray-300")"
-                                              style="font-variation-settings: 'FILL' 1;">star</span>
+                                        <span
+                                            class="material-symbols-outlined text-base @(i <= rev.Rating ? "text-brand-red" : "text-gray-300")"
+                                            style="font-variation-settings: 'FILL' 1;">star</span>
                                     }
                                 </div>
                             </div>
@@ -516,7 +550,8 @@ else
                             <!-- Existing owner response -->
                             @if (rev.OwnerResponse is { Length: > 0 })
                             {
-                                <div class="bg-surface-container border-l-4 border-brand-red rounded-r-lg px-4 py-3 mb-3">
+                                <div
+                                    class="bg-surface-container border-l-4 border-brand-red rounded-r-lg px-4 py-3 mb-3">
                                     <p class="text-xs font-bold text-brand-red mb-1">Răspunsul proprietarului</p>
                                     <p class="text-sm text-text-main leading-relaxed">@rev.OwnerResponse</p>
                                     @if (rev.OwnerResponseAt.HasValue)
@@ -530,7 +565,8 @@ else
                             @if (_respondingToId == rev.Id)
                             {
                                 <div class="flex flex-col gap-2 mt-2">
-                                    <textarea @bind="_responseText" rows="3" placeholder="Scrieți răspunsul dvs. la această recenzie..."
+                                    <textarea @bind="_responseText" rows="3"
+                                              placeholder="Scrieți răspunsul dvs. la această recenzie..."
                                               class="border border-border-light rounded-lg px-3 py-2 text-sm text-text-main focus:outline-none focus:ring-1 focus:ring-brand-red resize-none"></textarea>
                                     <div class="flex gap-2">
                                         <button @onclick="async () => await SaveResponse(rev.Id)"
@@ -554,8 +590,9 @@ else
                             }
                             else
                             {
-                                <button @onclick='() => { _respondingToId = rev.Id; _responseText = rev.OwnerResponse ?? ""; }'
-                                        class="flex items-center gap-1.5 text-xs font-semibold text-text-muted hover:text-brand-red transition-colors mt-1">
+                                <button
+                                    @onclick='() => { _respondingToId = rev.Id; _responseText = rev.OwnerResponse ?? ""; }'
+                                    class="flex items-center gap-1.5 text-xs font-semibold text-text-muted hover:text-brand-red transition-colors mt-1">
                                     <span class="material-symbols-outlined text-base">reply</span>
                                     @(rev.OwnerResponse is { Length: > 0 } ? "Editează răspunsul" : "Răspunde")
                                 </button>
@@ -630,11 +667,11 @@ else
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         if (!state.User.IsInRole("ShopOwner"))
         {
-            Nav.NavigateTo("/auth/login", forceLoad: true);
+            Nav.NavigateTo("/auth/login", true);
             return;
         }
 
-        var userId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        var userId = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
         _shop = await ShopRepo.GetByOwnerIdAsync(userId);
 
         if (_shop is not null)
@@ -676,7 +713,7 @@ else
                 DayName = DayNames[i],
                 IsClosed = existing?.IsClosed ?? i >= 5,
                 OpenTime = existing?.OpenTime?.ToString("HH:mm") ?? "09:00",
-                CloseTime = existing?.CloseTime?.ToString("HH:mm") ?? "18:00",
+                CloseTime = existing?.CloseTime?.ToString("HH:mm") ?? "18:00"
             };
         }).ToList();
     }
@@ -702,7 +739,7 @@ else
             Name = _newName.Trim(),
             Description = _newDescription.Trim(),
             PriceMin = _newPriceMin,
-            PriceMax = _newPriceMax,
+            PriceMax = _newPriceMax
         };
         var saved = await ShopRepo.AddServiceAsync(entity);
         _services.Add(ServiceRow.FromEntity(saved));
@@ -722,7 +759,7 @@ else
             Name = row.EditName.Trim(),
             Description = row.EditDescription.Trim(),
             PriceMin = row.EditPriceMin,
-            PriceMax = row.EditPriceMax,
+            PriceMax = row.EditPriceMax
         };
         await ShopRepo.UpdateServiceAsync(entity);
         row.Apply();
@@ -743,7 +780,7 @@ else
             DayOfWeek = h.Day,
             IsClosed = h.IsClosed,
             OpenTime = h.IsClosed ? null : TimeOnly.TryParse(h.OpenTime, out var ot) ? ot : null,
-            CloseTime = h.IsClosed ? null : TimeOnly.TryParse(h.CloseTime, out var ct) ? ct : null,
+            CloseTime = h.IsClosed ? null : TimeOnly.TryParse(h.CloseTime, out var ct) ? ct : null
         }).ToList();
         await ShopRepo.UpsertHoursAsync(_shop!.Id, entities);
         _saving = false;
@@ -758,6 +795,7 @@ else
             _newBrandName = string.Empty;
             return;
         }
+
         var brand = await ShopRepo.AddBrandAsync(new ShopBrand { ShopId = _shop!.Id, Name = name });
         _brands.Add(brand);
         _newBrandName = string.Empty;
@@ -780,14 +818,15 @@ else
         _uploadError = string.Empty;
         try
         {
-            foreach (var file in e.GetMultipleFiles(10))
+            foreach (var file in e.GetMultipleFiles())
             {
                 if (file.Size > 5 * 1024 * 1024)
                 {
                     _uploadError = $"'{file.Name}' depășește limita de 5 MB.";
                     continue;
                 }
-                await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+
+                await using var stream = file.OpenReadStream(5 * 1024 * 1024);
                 var url = await FileStorage.UploadAsync(stream, file.Name, "shops");
                 var photo = await ShopRepo.AddPhotoAsync(new ShopPhoto { ShopId = _shop!.Id, Url = url });
                 _photos.Add(photo);
@@ -860,6 +899,7 @@ else
             rev.OwnerResponse = text;
             rev.OwnerResponseAt = DateTime.UtcNow;
         }
+
         _respondingToId = null;
         _responseText = string.Empty;
     }
@@ -873,6 +913,7 @@ else
             rev.OwnerResponse = null;
             rev.OwnerResponseAt = null;
         }
+
         _respondingToId = null;
         _responseText = string.Empty;
     }
@@ -884,21 +925,27 @@ else
         return $"{min:0} – {max:0} RON";
     }
 
-    private static string ShopStatusClass(ShopStatus s) => s switch
+    private static string ShopStatusClass(ShopStatus s)
     {
-        ShopStatus.Active   => "bg-green-900/30 text-green-300",
-        ShopStatus.Pending  => "bg-orange-900/30 text-orange-300",
-        ShopStatus.Inactive => "bg-white/10 text-white/50",
-        _ => "bg-white/10 text-white/50"
-    };
+        return s switch
+        {
+            ShopStatus.Active => "bg-green-900/30 text-green-300",
+            ShopStatus.Pending => "bg-orange-900/30 text-orange-300",
+            ShopStatus.Inactive => "bg-white/10 text-white/50",
+            _ => "bg-white/10 text-white/50"
+        };
+    }
 
-    private static string ShopStatusLabel(ShopStatus s) => s switch
+    private static string ShopStatusLabel(ShopStatus s)
     {
-        ShopStatus.Active   => "Activ",
-        ShopStatus.Pending  => "În verificare",
-        ShopStatus.Inactive => "Inactiv",
-        _ => s.ToString()
-    };
+        return s switch
+        {
+            ShopStatus.Active => "Activ",
+            ShopStatus.Pending => "În verificare",
+            ShopStatus.Inactive => "Inactiv",
+            _ => s.ToString()
+        };
+    }
 
     private class ServiceRow
     {
@@ -913,14 +960,17 @@ else
         public decimal EditPriceMin { get; set; }
         public decimal EditPriceMax { get; set; }
 
-        public static ServiceRow FromEntity(ShopService s) => new()
+        public static ServiceRow FromEntity(ShopService s)
         {
-            Id = s.Id,
-            Name = s.Name,
-            Description = s.Description,
-            PriceMin = s.PriceMin,
-            PriceMax = s.PriceMax,
-        };
+            return new ServiceRow
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description,
+                PriceMin = s.PriceMin,
+                PriceMax = s.PriceMax
+            };
+        }
 
         public void BeginEdit()
         {
@@ -931,7 +981,10 @@ else
             IsEditing = true;
         }
 
-        public void CancelEdit() => IsEditing = false;
+        public void CancelEdit()
+        {
+            IsEditing = false;
+        }
 
         public void Apply()
         {
@@ -951,4 +1004,5 @@ else
         public string OpenTime { get; set; } = "09:00";
         public string CloseTime { get; set; } = "18:00";
     }
+
 }

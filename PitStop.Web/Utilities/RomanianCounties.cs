@@ -9,6 +9,6 @@ public static class RomanianCounties
         "Covasna", "Dâmbovița", "Dolj", "Galați", "Giurgiu", "Gorj", "Harghita",
         "Hunedoara", "Ialomița", "Iași", "Ilfov", "Maramureș", "Mehedinți", "Mureș",
         "Neamț", "Olt", "Prahova", "Sălaj", "Satu Mare", "Sibiu", "Suceava",
-        "Teleorman", "Timiș", "Tulcea", "Vâlcea", "Vaslui", "Vrancea",
+        "Teleorman", "Timiș", "Tulcea", "Vâlcea", "Vaslui", "Vrancea"
     ];
 }

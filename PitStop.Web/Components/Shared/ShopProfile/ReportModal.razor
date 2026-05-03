@@ -7,8 +7,10 @@
                 <div class="text-center py-4">
                     <span class="material-symbols-outlined text-6xl text-green-500 block mb-3"
                           style="font-variation-settings: 'FILL' 1;">check_circle</span>
-                    <h3 class="font-bold text-xl text-text-main mb-2" style="font-family: Manrope, sans-serif;">Mulțumim!</h3>
-                    <p class="text-text-muted text-sm mb-6">Raportul tău a fost trimis. Vom analiza situația cât mai curând.</p>
+                    <h3 class="font-bold text-xl text-text-main mb-2" style="font-family: Manrope, sans-serif;">
+                        Mulțumim!</h3>
+                    <p class="text-text-muted text-sm mb-6">Raportul tău a fost trimis. Vom analiza situația cât mai
+                        curând.</p>
                     <button @onclick="Close"
                             class="px-6 py-2.5 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark transition-colors">
                         Închide
@@ -17,7 +19,8 @@
             }
             else
             {
-                <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Raportează o problemă</h3>
+                <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Raportează o
+                    problemă</h3>
                 <p class="text-text-muted text-sm mb-6">Ajută-ne să menținem informațiile corecte și actualizate.</p>
 
                 <div class="space-y-3 mb-5">
@@ -27,8 +30,9 @@
                             <input type="radio" name="reportType" value="@option"
                                    checked="@(_reportType == option)"
                                    @onchange="() => _reportType = option"
-                                   class="accent-brand-red w-4 h-4 shrink-0" />
-                            <span class="text-text-main text-sm group-hover:text-brand-red transition-colors">@option</span>
+                                   class="accent-brand-red w-4 h-4 shrink-0"/>
+                            <span
+                                class="text-text-main text-sm group-hover:text-brand-red transition-colors">@option</span>
                         </label>
                     }
                 </div>
@@ -77,4 +81,5 @@
         _reportType = "Informații incorecte";
         await OnClose.InvokeAsync();
     }
+
 }

@@ -6,7 +6,8 @@ using PitStop.Infrastructure.Data;
 
 namespace PitStop.Infrastructure.Repositories;
 
-public class FavoriteShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<FavoriteShopRepository> logger) : IFavoriteShopRepository
+public class FavoriteShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<FavoriteShopRepository> logger)
+    : IFavoriteShopRepository
 {
     public async Task<List<FavoriteShop>> GetByUserIdAsync(string userId)
     {

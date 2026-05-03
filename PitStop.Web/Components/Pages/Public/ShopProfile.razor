@@ -1,11 +1,13 @@
 @page "/serviciu/{Id:int}"
+@using System.Security.Claims
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Authorization
 @rendermode InteractiveServer
 @inject IShopRepository ShopRepo
 @inject IFavoriteShopRepository FavoriteRepo
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Nav
-@using Microsoft.AspNetCore.Components.Authorization
 
 <PageTitle>@(Shop is null ? "PitStop" : $"{Shop.Name} — {Shop.Category} în {Shop.City} | PitStop")</PageTitle>
 @if (Shop is not null)
@@ -13,18 +15,18 @@
     var absImage = Shop.CoverImage.StartsWith("http") ? Shop.CoverImage : $"{Nav.BaseUri.TrimEnd('/')}{Shop.CoverImage}";
     var metaDesc = Shop.Description.Length > 155 ? Shop.Description[..155] + "…" : Shop.Description;
     <HeadContent>
-        <meta name="description" content="@metaDesc" />
-        <meta property="og:type"        content="business.business" />
-        <meta property="og:title"       content="@Shop.Name | PitStop" />
-        <meta property="og:description" content="@metaDesc" />
-        <meta property="og:image"       content="@absImage" />
-        <meta property="og:url"         content="@Nav.Uri" />
-        <meta property="og:locale"      content="ro_RO" />
-        <meta name="twitter:card"        content="summary_large_image" />
-        <meta name="twitter:title"       content="@Shop.Name | PitStop" />
-        <meta name="twitter:description" content="@metaDesc" />
-        <meta name="twitter:image"       content="@absImage" />
-        <link rel="canonical" href="@Nav.Uri" />
+        <meta name="description" content="@metaDesc"/>
+        <meta property="og:type" content="business.business"/>
+        <meta property="og:title" content="@Shop.Name | PitStop"/>
+        <meta property="og:description" content="@metaDesc"/>
+        <meta property="og:image" content="@absImage"/>
+        <meta property="og:url" content="@Nav.Uri"/>
+        <meta property="og:locale" content="ro_RO"/>
+        <meta name="twitter:card" content="summary_large_image"/>
+        <meta name="twitter:title" content="@Shop.Name | PitStop"/>
+        <meta name="twitter:description" content="@metaDesc"/>
+        <meta name="twitter:image" content="@absImage"/>
+        <link rel="canonical" href="@Nav.Uri"/>
         @((MarkupString)BuildJsonLd())
     </HeadContent>
 }
@@ -37,46 +39,46 @@
 }
 else
 {
-<div class="bg-surface-bright min-h-screen">
+    <div class="bg-surface-bright min-h-screen">
 
-    <ShopHeroBanner Shop="Shop" IsFavorite="_isFavorite" IsTogglingFavorite="_togglingFavorite"
-                    PageUrl="@Nav.Uri" OnToggleFavorite="ToggleFavorite" />
+        <ShopHeroBanner Shop="Shop" IsFavorite="_isFavorite" IsTogglingFavorite="_togglingFavorite"
+                        PageUrl="@Nav.Uri" OnToggleFavorite="ToggleFavorite"/>
 
-    <div class="max-w-7xl mx-auto px-6 py-12">
-        <div class="flex flex-col lg:flex-row gap-8">
+        <div class="max-w-7xl mx-auto px-6 py-12">
+            <div class="flex flex-col lg:flex-row gap-8">
 
-            <div class="lg:w-2/3 space-y-8">
-                <ShopAboutCard Description="@Shop.Description" Brands="Shop.Brands" />
-                <ShopServicesCard Services="Shop.Services" />
-                <ShopGallery Photos="Shop.Photos" />
-                <ShopReviewsSection ShopId="Id" ShopName="@Shop.Name"
-                                    Reviews="Shop.Reviews" RatingBars="RatingBars"
-                                    OverallRating="Shop.Rating" TotalCount="Shop.ReviewCount"
-                                    IsAuthenticated="_isAuthenticated" UserId="@_userId"
-                                    UserDisplayName="@_userDisplayName" UserInitials="@_userInitials"
-                                    OnReviewSubmitted="LoadShop" />
-            </div>
+                <div class="lg:w-2/3 space-y-8">
+                    <ShopAboutCard Description="@Shop.Description" Brands="Shop.Brands"/>
+                    <ShopServicesCard Services="Shop.Services"/>
+                    <ShopGallery Photos="Shop.Photos"/>
+                    <ShopReviewsSection ShopId="Id" ShopName="@Shop.Name"
+                                        Reviews="Shop.Reviews" RatingBars="RatingBars"
+                                        OverallRating="Shop.Rating" TotalCount="Shop.ReviewCount"
+                                        IsAuthenticated="_isAuthenticated" UserId="@_userId"
+                                        UserDisplayName="@_userDisplayName" UserInitials="@_userInitials"
+                                        OnReviewSubmitted="LoadShop"/>
+                </div>
 
-            <div class="lg:w-1/3">
-                <div class="sticky top-24 space-y-6">
-                    <ShopContactCard Phone="@Shop.Phone" Email="@Shop.Email"
-                                     Website="@Shop.Website" Address="@Shop.Address" />
-                    <ShopHoursCard Hours="Shop.Hours" />
-                    <ShopLocationCard Address="@Shop.Address" />
-                    <button @onclick='() => _reportOpen = true'
-                            class="w-full flex items-center justify-center gap-1.5 py-1 text-text-muted hover:text-brand-red transition-colors text-xs font-medium">
-                        <span class="material-symbols-outlined text-base">flag</span>
-                        Raportează o problemă cu acest profil
-                    </button>
+                <div class="lg:w-1/3">
+                    <div class="sticky top-24 space-y-6">
+                        <ShopContactCard Phone="@Shop.Phone" Email="@Shop.Email"
+                                         Website="@Shop.Website" Address="@Shop.Address"/>
+                        <ShopHoursCard Hours="Shop.Hours"/>
+                        <ShopLocationCard Address="@Shop.Address"/>
+                        <button @onclick='() => _reportOpen = true'
+                                class="w-full flex items-center justify-center gap-1.5 py-1 text-text-muted hover:text-brand-red transition-colors text-xs font-medium">
+                            <span class="material-symbols-outlined text-base">flag</span>
+                            Raportează o problemă cu acest profil
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <ShopSimilarSection SimilarShops="SimilarShops" City="@Shop.City"/>
         </div>
-
-        <ShopSimilarSection SimilarShops="SimilarShops" City="@Shop.City" />
     </div>
-</div>
 
-<ReportModal IsOpen="_reportOpen" OnClose='() => _reportOpen = false' />
+    <ReportModal IsOpen="_reportOpen" OnClose='() => _reportOpen = false'/>
 }
 
 @code {
@@ -104,7 +106,7 @@ else
         if (state.User.Identity?.IsAuthenticated == true)
         {
             _isAuthenticated = true;
-            _userId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+            _userId = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
             var appUser = await UserManager.FindByIdAsync(_userId);
             _userDisplayName = appUser?.FullName ?? "Utilizator";
             _userInitials = Initials(_userDisplayName);
@@ -122,7 +124,11 @@ else
     {
         Shop = null;
         var shop = await ShopRepo.GetByIdAsync(Id);
-        if (shop is null) { Nav.NavigateTo("/not-found"); return; }
+        if (shop is null)
+        {
+            Nav.NavigateTo("/not-found");
+            return;
+        }
 
         _ = ShopRepo.IncrementViewCountAsync(Id);
 
@@ -131,29 +137,29 @@ else
         var (isOpen, closingTime) = GetOpenStatus(shop.Hours, today);
 
         Shop = new ShopProfileData(
-            Name: shop.Name,
-            Category: CategoryDisplayName(shop.Category),
-            City: shop.City,
-            County: shop.County,
-            Address: shop.Address,
-            Phone: shop.Phone,
-            Email: shop.Email,
-            Website: shop.Website ?? string.Empty,
-            Rating: Math.Round(shop.AverageRating, 1),
-            ReviewCount: shop.ReviewCount,
-            IsOpen: isOpen,
-            ClosingTime: closingTime,
-            CoverImage: shop.CoverImage ?? shop.Photos.FirstOrDefault()?.Url ?? string.Empty,
-            Description: shop.Description,
-            Brands: shop.Brands.Select(b => b.Name).ToList(),
-            Services: shop.Services.Select(s => new ServiceItem(
+            shop.Name,
+            CategoryDisplayName(shop.Category),
+            shop.City,
+            shop.County,
+            shop.Address,
+            shop.Phone,
+            shop.Email,
+            shop.Website ?? string.Empty,
+            Math.Round(shop.AverageRating, 1),
+            shop.ReviewCount,
+            isOpen,
+            closingTime,
+            shop.CoverImage ?? shop.Photos.FirstOrDefault()?.Url ?? string.Empty,
+            shop.Description,
+            shop.Brands.Select(b => b.Name).ToList(),
+            shop.Services.Select(s => new ServiceItem(
                 s.Name, s.Description, FormatPrice(s.PriceMin, s.PriceMax))).ToList(),
-            Photos: shop.Photos.Select(p => p.Url).ToList(),
-            Reviews: shop.Reviews.Select(r => new ReviewItem(
+            shop.Photos.Select(p => p.Url).ToList(),
+            shop.Reviews.Select(r => new ReviewItem(
                 r.Id, r.UserName, r.UserInitials, r.Rating, FormatDate(r.CreatedAt), r.Text, r.UsefulCount,
                 r.OwnerResponse,
                 r.OwnerResponseAt.HasValue ? FormatDate(r.OwnerResponseAt.Value) : null)).ToList(),
-            Hours: shop.Hours.OrderBy(h => h.DayOfWeek).Select(h => new HourItem(
+            shop.Hours.OrderBy(h => h.DayOfWeek).Select(h => new HourItem(
                 DayNames[h.DayOfWeek],
                 h.OpenTime?.ToString("HH:mm") ?? string.Empty,
                 h.CloseTime?.ToString("HH:mm") ?? string.Empty,
@@ -184,7 +190,12 @@ else
 
     private async Task ToggleFavorite()
     {
-        if (!_isAuthenticated) { Nav.NavigateTo("/auth/login", forceLoad: true); return; }
+        if (!_isAuthenticated)
+        {
+            Nav.NavigateTo("/auth/login", true);
+            return;
+        }
+
         _togglingFavorite = true;
         if (_isFavorite)
             await FavoriteRepo.RemoveAsync(_userId, Id);
@@ -205,19 +216,21 @@ else
     private static List<RatingBar> BuildRatingBars(ICollection<Review> reviews)
     {
         var total = reviews.Count;
-        if (total == 0) return [new(5,0), new(4,0), new(3,0), new(2,0), new(1,0)];
+        if (total == 0) return [new RatingBar(5, 0), new RatingBar(4, 0), new RatingBar(3, 0), new RatingBar(2, 0), new RatingBar(1, 0)];
         return Enumerable.Range(1, 5).Reverse()
             .Select(s => new RatingBar(s, (int)Math.Round(reviews.Count(r => r.Rating == s) * 100.0 / total)))
             .ToList();
     }
 
-    private static string FormatPrice(decimal min, decimal max) =>
-        (min, max) switch
+    private static string FormatPrice(decimal min, decimal max)
+    {
+        return (min, max) switch
         {
             (0, 0) => "La cerere",
             var (a, b) when a == b => $"{a:N0} RON",
             _ => $"{min:N0} – {max:N0} RON"
         };
+    }
 
     private static string FormatDate(DateTime date)
     {
@@ -240,33 +253,34 @@ else
         // Use variables for @-prefixed keys — Razor parser misreads @ in string literals
         const string atType = "@type";
         const string atContext = "@context";
-        var data = new System.Collections.Generic.Dictionary<string, object>
+        var data = new Dictionary<string, object>
         {
-            [atContext]      = "https://schema.org",
-            [atType]         = "AutoRepair",
-            ["name"]         = Shop.Name,
-            ["description"]  = Shop.Description,
-            ["image"]        = absImage,
-            ["url"]          = Nav.Uri,
-            ["telephone"]    = Shop.Phone,
-            ["address"]      = new System.Collections.Generic.Dictionary<string, string>
+            [atContext] = "https://schema.org",
+            [atType] = "AutoRepair",
+            ["name"] = Shop.Name,
+            ["description"] = Shop.Description,
+            ["image"] = absImage,
+            ["url"] = Nav.Uri,
+            ["telephone"] = Shop.Phone,
+            ["address"] = new Dictionary<string, string>
             {
-                [atType]              = "PostalAddress",
-                ["streetAddress"]     = Shop.Address,
-                ["addressLocality"]   = Shop.City,
-                ["addressRegion"]     = Shop.County,
-                ["addressCountry"]    = "RO"
+                [atType] = "PostalAddress",
+                ["streetAddress"] = Shop.Address,
+                ["addressLocality"] = Shop.City,
+                ["addressRegion"] = Shop.County,
+                ["addressCountry"] = "RO"
             },
-            ["aggregateRating"] = new System.Collections.Generic.Dictionary<string, object>
+            ["aggregateRating"] = new Dictionary<string, object>
             {
-                [atType]        = "AggregateRating",
+                [atType] = "AggregateRating",
                 ["ratingValue"] = Shop.Rating,
                 ["reviewCount"] = Shop.ReviewCount
             }
         };
 
-        var json = System.Text.Json.JsonSerializer.Serialize(data);
+        var json = JsonSerializer.Serialize(data);
         // Use concatenation — Razor parser misreads <script> tag in string interpolation
         return "<script type=\"application/ld+json\">" + json + "</script>";
     }
+
 }

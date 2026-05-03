@@ -7,7 +7,8 @@ using PitStop.Infrastructure.Data;
 
 namespace PitStop.Infrastructure.Repositories;
 
-public class ShopRequestRepository(IDbContextFactory<AppDbContext> factory, ILogger<ShopRequestRepository> logger) : IShopRequestRepository
+public class ShopRequestRepository(IDbContextFactory<AppDbContext> factory, ILogger<ShopRequestRepository> logger)
+    : IShopRequestRepository
 {
     public async Task<List<ShopRequest>> GetAllAsync()
     {
@@ -42,7 +43,8 @@ public class ShopRequestRepository(IDbContextFactory<AppDbContext> factory, ILog
         await using var ctx = await factory.CreateDbContextAsync();
         ctx.ShopRequests.Add(request);
         await ctx.SaveChangesAsync();
-        logger.LogInformation("ShopRequest created: id={Id} shop={ShopName} email={Email}", request.Id, request.ShopName, request.Email);
+        logger.LogInformation("ShopRequest created: id={Id} shop={ShopName} email={Email}", request.Id,
+            request.ShopName, request.Email);
         return request;
     }
 

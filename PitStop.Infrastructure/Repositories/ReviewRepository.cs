@@ -6,7 +6,8 @@ using PitStop.Infrastructure.Data;
 
 namespace PitStop.Infrastructure.Repositories;
 
-public class ReviewRepository(IDbContextFactory<AppDbContext> factory, ILogger<ReviewRepository> logger) : IReviewRepository
+public class ReviewRepository(IDbContextFactory<AppDbContext> factory, ILogger<ReviewRepository> logger)
+    : IReviewRepository
 {
     public async Task<(List<Review> Items, int TotalCount)> GetByShopIdAsync(int shopId, int page, int pageSize)
     {
@@ -41,7 +42,8 @@ public class ReviewRepository(IDbContextFactory<AppDbContext> factory, ILogger<R
         await using var ctx = await factory.CreateDbContextAsync();
         ctx.Reviews.Add(review);
         await ctx.SaveChangesAsync();
-        logger.LogInformation("Review created: shop={ShopId} user={UserId} rating={Rating}", review.ShopId, review.UserId, review.Rating);
+        logger.LogInformation("Review created: shop={ShopId} user={UserId} rating={Rating}", review.ShopId,
+            review.UserId, review.Rating);
         return review;
     }
 

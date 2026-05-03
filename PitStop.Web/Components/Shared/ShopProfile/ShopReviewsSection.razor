@@ -1,3 +1,4 @@
+@using Microsoft.EntityFrameworkCore
 @inject IReviewRepository ReviewRepo
 @inject IShopRepository ShopRepo
 @inject NavigationManager Nav
@@ -7,9 +8,10 @@
 
     <div class="flex flex-col md:flex-row gap-12 mb-10 items-center">
         <div class="text-center shrink-0">
-            <div class="text-6xl font-black text-text-main leading-none mb-2" style="font-family: Manrope, sans-serif;">@OverallRating</div>
+            <div class="text-6xl font-black text-text-main leading-none mb-2"
+                 style="font-family: Manrope, sans-serif;">@OverallRating</div>
             <div class="flex justify-center mb-1">
-                @for (int i = 1; i <= 5; i++)
+                @for (var i = 1; i <= 5; i++)
                 {
                     <span class="material-symbols-outlined text-brand-red" style="font-variation-settings: 'FILL' 1;">star</span>
                 }
@@ -39,7 +41,8 @@
                 <div class="bg-surface-bright p-6 rounded-lg border border-border-light">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex gap-4 items-center">
-                            <div class="w-12 h-12 rounded-full bg-brand-red-faint flex items-center justify-center font-bold text-brand-red text-sm shrink-0">
+                            <div
+                                class="w-12 h-12 rounded-full bg-brand-red-faint flex items-center justify-center font-bold text-brand-red text-sm shrink-0">
                                 @review.Initials
                             </div>
                             <div>
@@ -48,7 +51,7 @@
                             </div>
                         </div>
                         <div class="flex shrink-0">
-                            @for (int i = 1; i <= 5; i++)
+                            @for (var i = 1; i <= 5; i++)
                             {
                                 var starVal = i;
                                 <span class="material-symbols-outlined text-brand-red text-sm"
@@ -89,7 +92,8 @@
     {
         <p class="text-center text-sm text-text-muted mt-3">
             Recenziile sunt disponibile doar pentru utilizatorii înregistrați.
-            <a href="/auth/login?returnUrl=@Uri.EscapeDataString($"/serviciu/{ShopId}")" class="text-brand-red font-medium hover:underline">Autentifică-te</a>
+            <a href="/auth/login?returnUrl=@Uri.EscapeDataString($"/serviciu/{ShopId}")"
+               class="text-brand-red font-medium hover:underline">Autentifică-te</a>
             pentru a lăsa o recenzie.
         </p>
     }
@@ -99,17 +103,19 @@
 {
     <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="CloseReview">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8" @onclick:stopPropagation="true">
-            <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Scrie o recenzie</h3>
+            <h3 class="font-bold text-xl text-text-main mb-1" style="font-family: Manrope, sans-serif;">Scrie o
+                recenzie</h3>
             <p class="text-text-muted text-sm mb-6">@ShopName</p>
 
             <div class="flex gap-2 mb-6">
-                @for (int i = 1; i <= 5; i++)
+                @for (var i = 1; i <= 5; i++)
                 {
                     var star = i;
                     <button @onclick="() => _newRating = star"
                             class="text-3xl transition-transform hover:scale-110 active:scale-95">
-                        <span class="material-symbols-outlined text-3xl @(star <= _newRating ? "text-brand-red" : "text-gray-300")"
-                              style="font-variation-settings: 'FILL' 1;">star</span>
+                        <span
+                            class="material-symbols-outlined text-3xl @(star <= _newRating ? "text-brand-red" : "text-gray-300")"
+                            style="font-variation-settings: 'FILL' 1;">star</span>
                     </button>
                 }
             </div>
@@ -121,7 +127,8 @@
 
             @if (_reviewError is { Length: > 0 })
             {
-                <div class="flex items-center gap-2 bg-brand-red-faint border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red mb-4">
+                <div
+                    class="flex items-center gap-2 bg-brand-red-faint border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red mb-4">
                     <span class="material-symbols-outlined text-lg">error</span>
                     @_reviewError
                 </div>
@@ -132,7 +139,8 @@
                         class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
                     Anulează
                 </button>
-                <button @onclick="SubmitReview" disabled="@(_submittingReview || string.IsNullOrWhiteSpace(_newReviewText))"
+                <button @onclick="SubmitReview"
+                        disabled="@(_submittingReview || string.IsNullOrWhiteSpace(_newReviewText))"
                         class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-all text-sm">
                     @(_submittingReview ? "Se trimite..." : "Publică recenzia")
                 </button>
@@ -142,8 +150,8 @@
 }
 
 @code {
-    [Parameter, EditorRequired] public int ShopId { get; set; }
-    [Parameter, EditorRequired] public string ShopName { get; set; } = string.Empty;
+    [Parameter][EditorRequired] public int ShopId { get; set; }
+    [Parameter][EditorRequired] public string ShopName { get; set; } = string.Empty;
     [Parameter] public List<ReviewItem> Reviews { get; set; } = [];
     [Parameter] public List<RatingBar> RatingBars { get; set; } = [];
     [Parameter] public double OverallRating { get; set; }
@@ -165,9 +173,10 @@
     {
         if (!IsAuthenticated)
         {
-            Nav.NavigateTo($"/auth/login?returnUrl={Uri.EscapeDataString($"/serviciu/{ShopId}")}", forceLoad: true);
+            Nav.NavigateTo($"/auth/login?returnUrl={Uri.EscapeDataString($"/serviciu/{ShopId}")}", true);
             return;
         }
+
         _reviewError = string.Empty;
         _reviewOpen = true;
     }
@@ -194,14 +203,14 @@
                 UserName = UserDisplayName,
                 UserInitials = UserInitials,
                 Rating = _newRating,
-                Text = _newReviewText.Trim(),
+                Text = _newReviewText.Trim()
             };
             await ReviewRepo.CreateAsync(review);
             await ShopRepo.RecalcRatingAsync(ShopId);
             CloseReview();
             await OnReviewSubmitted.InvokeAsync();
         }
-        catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+        catch (DbUpdateException)
         {
             // unique index on (ShopId, UserId) prevents duplicate reviews
             _reviewError = "Ai deja o recenzie pentru acest serviciu.";
@@ -221,4 +230,5 @@
         if (idx >= 0)
             Reviews[idx] = Reviews[idx] with { UsefulCount = Reviews[idx].UsefulCount + 1 };
     }
+
 }

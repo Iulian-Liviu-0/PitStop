@@ -3,8 +3,8 @@ using PitStop.Domain.Enums;
 namespace PitStop.Domain.Entities;
 
 /// <summary>
-/// A public onboarding request submitted before a shop is created.
-/// Does not inherit BaseEntity — has no UpdatedAt and uses its own Id.
+///     A public onboarding request submitted before a shop is created.
+///     Does not inherit BaseEntity — has no UpdatedAt and uses its own Id.
 /// </summary>
 public class ShopRequest
 {

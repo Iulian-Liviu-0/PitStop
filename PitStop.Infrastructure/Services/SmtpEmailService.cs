@@ -12,11 +12,11 @@ public class SmtpEmailService(IConfiguration config, ILogger<SmtpEmailService> l
     public async Task SendAsync(string to, string subject, string htmlBody)
     {
         var section = config.GetSection("Email");
-        var host     = section["Host"]     ?? "localhost";
-        var port     = int.Parse(section["Port"] ?? "587");
-        var user     = section["Username"] ?? string.Empty;
-        var pass     = section["Password"] ?? string.Empty;
-        var from     = section["From"]     ?? "noreply@pitstop.ro";
+        var host = section["Host"] ?? "localhost";
+        var port = int.Parse(section["Port"] ?? "587");
+        var user = section["Username"] ?? string.Empty;
+        var pass = section["Password"] ?? string.Empty;
+        var from = section["From"] ?? "noreply@pitstop.ro";
         var fromName = section["FromName"] ?? "PitStop";
 
         var message = new MimeMessage();

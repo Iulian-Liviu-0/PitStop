@@ -46,8 +46,8 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public string Phone { get; set; } = string.Empty;
+    [Parameter][EditorRequired] public string Phone { get; set; } = string.Empty;
     [Parameter] public string Email { get; set; } = string.Empty;
     [Parameter] public string Website { get; set; } = string.Empty;
-    [Parameter, EditorRequired] public string Address { get; set; } = string.Empty;
+    [Parameter][EditorRequired] public string Address { get; set; } = string.Empty;
 }

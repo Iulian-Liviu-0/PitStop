@@ -1,4 +1,5 @@
 @page "/dashboard"
+@using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
 @rendermode InteractiveServer
 @inject NavigationManager Nav
@@ -13,7 +14,8 @@
 <!-- Header -->
 <div class="bg-hero-dark text-white py-10 px-6 md:px-12">
     <div class="max-w-7xl mx-auto flex items-center gap-5">
-        <div class="w-14 h-14 rounded-full bg-brand-red flex items-center justify-center text-xl font-black shrink-0" style="font-family: Manrope, sans-serif;">
+        <div class="w-14 h-14 rounded-full bg-brand-red flex items-center justify-center text-xl font-black shrink-0"
+             style="font-family: Manrope, sans-serif;">
             @_initials
         </div>
         <div>
@@ -28,11 +30,12 @@
 <!-- Tab bar -->
 <div class="bg-white border-b border-border-light sticky top-0 z-10">
     <div class="max-w-7xl mx-auto px-6 md:px-12 flex gap-0 overflow-x-auto">
-        @foreach (var (id, label) in new[] {
-            ("favorites", $"Favorite ({_favorites.Count})"),
-            ("reviews",   $"Recenziile mele ({_reviews.Count})"),
-            ("settings",  "Setări cont")
-        })
+        @foreach (var (id, label) in new[]
+                      {
+                          ("favorites", $"Favorite ({_favorites.Count})"),
+                          ("reviews", $"Recenziile mele ({_reviews.Count})"),
+                          ("settings", "Setări cont")
+                      })
         {
             <button @onclick="() => _tab = id"
                     class="px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors @(_tab == id ? "border-brand-red text-brand-red" : "border-transparent text-text-muted hover:text-text-main")">
@@ -61,7 +64,7 @@
                 @foreach (var fav in _favorites)
                 {
                     <div class="relative group">
-                        <ShopCard Shop="MapToCard(fav.Shop)" Variant="ShopCardVariant.Grid" />
+                        <ShopCard Shop="MapToCard(fav.Shop)" Variant="ShopCardVariant.Grid"/>
                         <button @onclick="async () => await RemoveFavorite(fav)"
                                 class="absolute top-3 right-3 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center text-brand-red hover:bg-brand-red hover:text-white transition-colors opacity-0 group-hover:opacity-100">
                             <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span>
@@ -78,7 +81,8 @@
             <div class="flex flex-col items-center justify-center py-20 text-text-muted gap-3">
                 <span class="material-symbols-outlined text-5xl">rate_review</span>
                 <p class="font-medium">Nu ai scris nicio recenzie încă.</p>
-                <a href="/servicii" class="text-sm text-brand-red font-bold hover:underline">Găsește servicii de recenzat →</a>
+                <a href="/servicii" class="text-sm text-brand-red font-bold hover:underline">Găsește servicii de
+                    recenzat →</a>
             </div>
         }
         else
@@ -91,19 +95,21 @@
                         {
                             <!-- Edit mode -->
                             <div class="flex items-center gap-1 mb-3">
-                                @for (int i = 1; i <= 5; i++)
+                                @for (var i = 1; i <= 5; i++)
                                 {
                                     var star = i;
                                     <button @onclick="() => _editRating = star">
-                                        <span class="material-symbols-outlined text-xl @(star <= _editRating ? "text-brand-red" : "text-gray-300")"
-                                              style="font-variation-settings: 'FILL' 1;">star</span>
+                                        <span
+                                            class="material-symbols-outlined text-xl @(star <= _editRating ? "text-brand-red" : "text-gray-300")"
+                                            style="font-variation-settings: 'FILL' 1;">star</span>
                                     </button>
                                 }
                             </div>
                             <textarea @bind="_editText" rows="3"
                                       class="w-full border border-border-light rounded-lg px-3 py-2.5 text-sm text-text-main resize-none focus:outline-none focus:border-brand-red transition-colors mb-3"></textarea>
                             <div class="flex gap-2">
-                                <button @onclick="async () => await SaveEditReview(rev)" disabled="@(_editSaving || string.IsNullOrWhiteSpace(_editText))"
+                                <button @onclick="async () => await SaveEditReview(rev)"
+                                        disabled="@(_editSaving || string.IsNullOrWhiteSpace(_editText))"
                                         class="px-4 py-2 bg-brand-red text-white text-sm font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-colors">
                                     @(_editSaving ? "Se salvează..." : "Salvează")
                                 </button>
@@ -118,17 +124,19 @@
                             <!-- View mode -->
                             <div class="flex items-start justify-between gap-3 mb-3">
                                 <div>
-                                    <a href="/serviciu/@rev.ShopId" class="font-bold text-text-main hover:text-brand-red transition-colors">
+                                    <a href="/serviciu/@rev.ShopId"
+                                       class="font-bold text-text-main hover:text-brand-red transition-colors">
                                         @rev.Shop?.Name
                                     </a>
                                     <p class="text-xs text-text-muted mt-0.5">@rev.CreatedAt.ToString("dd MMMM yyyy")</p>
                                 </div>
                                 <div class="flex items-center gap-1.5 shrink-0">
                                     <div class="flex gap-0.5">
-                                        @for (int i = 1; i <= 5; i++)
+                                        @for (var i = 1; i <= 5; i++)
                                         {
-                                            <span class="material-symbols-outlined text-base @(i <= rev.Rating ? "text-brand-red" : "text-gray-300")"
-                                                  style="font-variation-settings: 'FILL' 1;">star</span>
+                                            <span
+                                                class="material-symbols-outlined text-base @(i <= rev.Rating ? "text-brand-red" : "text-gray-300")"
+                                                style="font-variation-settings: 'FILL' 1;">star</span>
                                         }
                                     </div>
                                     <button @onclick="() => BeginEditReview(rev)"
@@ -155,23 +163,25 @@
 
             <!-- Profile info -->
             <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
-                <h2 class="font-bold text-lg text-text-main mb-5" style="font-family: Manrope, sans-serif;">Informații cont</h2>
+                <h2 class="font-bold text-lg text-text-main mb-5" style="font-family: Manrope, sans-serif;">Informații
+                    cont</h2>
                 <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-semibold text-text-main">Nume complet</label>
                         <input @bind="_editFullName" type="text"
-                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-semibold text-text-main">Email</label>
                         <input value="@_email" type="email" disabled
-                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-muted bg-surface-container cursor-not-allowed" />
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-muted bg-surface-container cursor-not-allowed"/>
                         <p class="text-xs text-text-muted">Modificarea email-ului nu este disponibilă momentan.</p>
                     </div>
 
                     @if (_profileSaveSuccess)
                     {
-                        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                        <div
+                            class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
                             <span class="material-symbols-outlined text-lg">check_circle</span>
                             Informațiile au fost salvate.
                         </div>
@@ -186,34 +196,37 @@
 
             <!-- Password change -->
             <div class="bg-white rounded-xl border border-border-light p-6 md:p-8">
-                <h2 class="font-bold text-lg text-text-main mb-5" style="font-family: Manrope, sans-serif;">Schimbă parola</h2>
+                <h2 class="font-bold text-lg text-text-main mb-5" style="font-family: Manrope, sans-serif;">Schimbă
+                    parola</h2>
                 <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-semibold text-text-main">Parola curentă</label>
                         <input @bind="_currentPassword" type="password"
-                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-semibold text-text-main">Parola nouă</label>
                         <input @bind="_newPassword" type="password"
-                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-semibold text-text-main">Confirmă parola nouă</label>
                         <input @bind="_confirmPassword" type="password"
-                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors" />
+                               class="border border-border-light rounded-lg px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-brand-red focus:ring-1 focus:ring-brand-red transition-colors"/>
                     </div>
 
                     @if (_passwordError is { Length: > 0 })
                     {
-                        <div class="flex items-center gap-2 bg-brand-red-light border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red">
+                        <div
+                            class="flex items-center gap-2 bg-brand-red-light border border-red-200 rounded-lg px-4 py-3 text-sm text-brand-red">
                             <span class="material-symbols-outlined text-lg">error</span>
                             @_passwordError
                         </div>
                     }
                     @if (_passwordSuccess)
                     {
-                        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                        <div
+                            class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
                             <span class="material-symbols-outlined text-lg">check_circle</span>
                             Parola a fost schimbată cu succes.
                         </div>
@@ -262,11 +275,11 @@
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         if (state.User.Identity?.IsAuthenticated != true)
         {
-            Nav.NavigateTo("/auth/login", forceLoad: true);
+            Nav.NavigateTo("/auth/login", true);
             return;
         }
 
-        _userId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        _userId = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
 
         var user = await UserMgr.FindByIdAsync(_userId);
         if (user is not null)
@@ -331,6 +344,7 @@
             _fullName = user.FullName is { Length: > 0 } n ? n : _email;
             _initials = Initials(_fullName);
         }
+
         _saving = false;
         _profileSaveSuccess = true;
     }
@@ -345,11 +359,13 @@
             _passwordError = "Completează toate câmpurile.";
             return;
         }
+
         if (_newPassword != _confirmPassword)
         {
             _passwordError = "Parolele noi nu coincid.";
             return;
         }
+
         if (_newPassword.Length < 8)
         {
             _passwordError = "Parola nouă trebuie să aibă cel puțin 8 caractere.";
@@ -373,18 +389,22 @@
                 _passwordError = result.Errors.FirstOrDefault()?.Description ?? "Eroare la schimbarea parolei.";
             }
         }
+
         _saving = false;
     }
 
-    private static ShopCardModel MapToCard(Shop s) => new(
-        Id: s.Id,
-        Name: s.Name,
-        Category: s.Category.ToString(),
-        Location: s.City,
-        Rating: s.AverageRating,
-        Description: s.Description,
-        ImageUrl: s.Photos.FirstOrDefault()?.Url ?? "",
-        ReviewCount: s.ReviewCount
-    );
+    private static ShopCardModel MapToCard(Shop s)
+    {
+        return new ShopCardModel(
+            s.Id,
+            s.Name,
+            s.Category.ToString(),
+            s.City,
+            s.AverageRating,
+            s.Description,
+            s.Photos.FirstOrDefault()?.Url ?? "",
+            ReviewCount: s.ReviewCount
+        );
+    }
 
 }

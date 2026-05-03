@@ -13,21 +13,21 @@
     @if (ShowRequestId)
     {
         <p class="text-xs text-text-muted mt-2">
-            <strong>Request ID:</strong> <code class="bg-surface-container px-2 py-0.5 rounded text-xs">@RequestId</code>
+            <strong>Request ID:</strong> <code
+                class="bg-surface-container px-2 py-0.5 rounded text-xs">@RequestId</code>
         </p>
     }
 
-    <a href="/" class="mt-8 bg-brand-red hover:bg-brand-red-dark text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-sm">
+    <a href="/"
+       class="mt-8 bg-brand-red hover:bg-brand-red-dark text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-sm">
         Înapoi acasă
     </a>
 </section>
 
 @code {
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
 
-    [PersistentState]
-    private string? RequestId { get; set; }
+    [PersistentState] private string? RequestId { get; set; }
 
     private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 
@@ -35,4 +35,5 @@
     {
         RequestId ??= Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
     }
+
 }

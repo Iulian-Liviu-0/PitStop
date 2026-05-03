@@ -5,5 +5,5 @@ public enum ShopStatus
     Pending,
     Active,
     Inactive,
-    Rejected,
+    Rejected
 }

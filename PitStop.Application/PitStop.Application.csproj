@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-      <ProjectReference Include="..\PitStop.Domain\PitStop.Domain.csproj" />
+        <ProjectReference Include="..\PitStop.Domain\PitStop.Domain.csproj"/>
     </ItemGroup>
 
     <PropertyGroup>

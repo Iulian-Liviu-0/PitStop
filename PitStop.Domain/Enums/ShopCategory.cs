@@ -13,5 +13,5 @@ public enum ShopCategory
     ITP,
     ServiceMoto,
     PieseMoto,
-    Altele,
+    Altele
 }

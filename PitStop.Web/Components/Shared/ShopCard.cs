@@ -1,6 +1,10 @@
 namespace PitStop.Web.Components.Shared;
 
-public enum ShopCardVariant { Grid, Row }
+public enum ShopCardVariant
+{
+    Grid,
+    Row
+}
 
 public record ShopCardModel(
     int Id,

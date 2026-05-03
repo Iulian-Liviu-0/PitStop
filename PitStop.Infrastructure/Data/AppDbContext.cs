@@ -35,7 +35,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         var now = DateTime.UtcNow;
 
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
-        {
             switch (entry.State)
             {
                 case EntityState.Added:
@@ -46,7 +45,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
                     entry.Entity.UpdatedAt = now;
                     break;
             }
-        }
 
         return await base.SaveChangesAsync(cancellationToken);
     }

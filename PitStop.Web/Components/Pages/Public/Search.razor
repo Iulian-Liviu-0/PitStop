@@ -4,11 +4,12 @@
 
 <PageTitle>@(_selectedCategoryName is not null ? $"{_selectedCategoryName} în {(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)} | PitStop" : "Servicii Auto & Moto în România | PitStop")</PageTitle>
 <HeadContent>
-    <meta name="description" content="@(_selectedCategoryName is not null ? $"Găsește {_selectedCategoryName.ToLower()} în {(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)}. Recenzii, program și contact direct." : "Caută și compară servicii auto și moto din România după categorie, județ și rating.")" />
-    <meta property="og:title"       content="Servicii Auto & Moto | PitStop" />
-    <meta property="og:description" content="Găsește servicii auto verificate din toată România." />
-    <meta property="og:type"        content="website" />
-    <meta property="og:locale"      content="ro_RO" />
+    <meta name="description"
+          content="@(_selectedCategoryName is not null ? $"Găsește {_selectedCategoryName.ToLower()} în {(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)}. Recenzii, program și contact direct." : "Caută și compară servicii auto și moto din România după categorie, județ și rating.")"/>
+    <meta property="og:title" content="Servicii Auto & Moto | PitStop"/>
+    <meta property="og:description" content="Găsește servicii auto verificate din toată România."/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:locale" content="ro_RO"/>
 </HeadContent>
 
 <div class="min-h-screen bg-surface-bright text-text-main">
@@ -26,7 +27,7 @@
                     <label class="block text-sm font-semibold text-text-warm mb-3">Cuvânt cheie</label>
                     <input type="text" @bind="SearchQuery" @bind:after="FilterChanged"
                            placeholder="ex: schimb ulei, frâne..."
-                           class="w-full bg-surface-container border border-gray-200 text-text-main text-sm rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-red/40" />
+                           class="w-full bg-surface-container border border-gray-200 text-text-main text-sm rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-red/40"/>
                 </div>
 
                 <!-- Category -->
@@ -39,7 +40,7 @@
                                 <input type="checkbox"
                                        checked="@category.Selected"
                                        @onchange="async _ => await SelectCategory(category)"
-                                       class="h-5 w-5 rounded border-gray-300 text-brand-red focus:ring-brand-red" />
+                                       class="h-5 w-5 rounded border-gray-300 text-brand-red focus:ring-brand-red"/>
                                 <span class="text-sm text-text-main group-hover:text-brand-red transition-colors">
                                     @category.Name
                                 </span>
@@ -59,7 +60,8 @@
                                 <option value="@county">@county</option>
                             }
                         </select>
-                        <span class="material-symbols-outlined absolute right-3 top-2.5 text-text-warm pointer-events-none text-xl">
+                        <span
+                            class="material-symbols-outlined absolute right-3 top-2.5 text-text-warm pointer-events-none text-xl">
                             expand_more
                         </span>
                     </div>
@@ -69,13 +71,14 @@
                 <div>
                     <label class="block text-sm font-semibold text-text-warm mb-3">Rating Minim</label>
                     <div class="flex items-center gap-1">
-                        @for (int i = 1; i <= 5; i++)
+                        @for (var i = 1; i <= 5; i++)
                         {
                             var star = i;
                             <button @onclick="async () => await SetMinRating(star)"
                                     class="transition-opacity hover:opacity-80">
-                                <span class="material-symbols-outlined text-2xl @(star <= MinRating ? "text-brand-red" : "text-gray-300")"
-                                      style="font-variation-settings: 'FILL' 1;">star</span>
+                                <span
+                                    class="material-symbols-outlined text-2xl @(star <= MinRating ? "text-brand-red" : "text-gray-300")"
+                                    style="font-variation-settings: 'FILL' 1;">star</span>
                             </button>
                         }
                         <span class="text-sm text-text-warm ml-2 font-medium">@($"{MinRating}.0+")</span>
@@ -86,7 +89,7 @@
                 <div>
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <input type="checkbox" @bind="OpenNow" @bind:after="FilterChanged"
-                               class="h-5 w-5 rounded border-gray-300 text-brand-red focus:ring-brand-red" />
+                               class="h-5 w-5 rounded border-gray-300 text-brand-red focus:ring-brand-red"/>
                         <span class="text-sm font-semibold text-text-warm group-hover:text-brand-red transition-colors">
                             Deschis acum
                         </span>
@@ -109,7 +112,8 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <h1 class="text-2xl font-bold text-text-main" style="font-family: Manrope, sans-serif;">
                     <span>@_totalCount rezultate găsite pentru: </span>
-                    <span class="text-brand-red">@(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)</span>
+                    <span
+                        class="text-brand-red">@(SelectedCounty == "Toate județele" ? "România" : SelectedCounty)</span>
                 </h1>
                 <div class="flex items-center gap-3">
                     <label class="text-sm text-text-warm whitespace-nowrap">Sortează după:</label>
@@ -120,7 +124,8 @@
                             <option value="rating">Rating (Descrescător)</option>
                             <option value="reviews">Cele mai multe recenzii</option>
                         </select>
-                        <span class="material-symbols-outlined absolute right-3 top-2 text-text-warm pointer-events-none text-xl">
+                        <span
+                            class="material-symbols-outlined absolute right-3 top-2 text-text-warm pointer-events-none text-xl">
                             expand_more
                         </span>
                     </div>
@@ -147,7 +152,7 @@
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-10">
                     @foreach (var shop in _results)
                     {
-                        <ShopCard Shop="shop" Variant="ShopCardVariant.Row" />
+                        <ShopCard Shop="shop" Variant="ShopCardVariant.Row"/>
                     }
                 </div>
 
@@ -158,7 +163,7 @@
                         <span class="material-symbols-outlined">chevron_left</span>
                     </button>
 
-                    @for (int i = 1; i <= TotalPages; i++)
+                    @for (var i = 1; i <= TotalPages; i++)
                     {
                         var pageNum = i;
                         <button @onclick="async () => await GoToPage(pageNum)"
@@ -179,11 +184,15 @@
 </div>
 
 @code {
-    [Parameter, SupplyParameterFromQuery(Name = "q")] public string? Q { get; set; }
-    [Parameter, SupplyParameterFromQuery(Name = "categorie")] public string? Categorie { get; set; }
+
+    [Parameter][SupplyParameterFromQuery(Name = "q")]
+    public string? Q { get; set; }
+
+    [Parameter][SupplyParameterFromQuery(Name = "categorie")]
+    public string? Categorie { get; set; }
 
     private int MinRating = 1;
-    private bool OpenNow = false;
+    private bool OpenNow;
     private string SelectedCounty = "Toate județele";
     private string SortOrder = "recommended";
     private string SearchQuery = string.Empty;
@@ -194,7 +203,7 @@
     private int _totalCount;
     private bool _loading;
 
-    private List<CategoryFilter> Categories =
+    private readonly List<CategoryFilter> Categories =
     [
         new("Service Auto", ShopCategory.ServiceAuto, false),
         new("Piese Auto", ShopCategory.PieseAuto, false),
@@ -207,7 +216,7 @@
         new("Service Moto", ShopCategory.ServiceMoto, false),
         new("Piese Moto", ShopCategory.PieseMoto, false),
         new("Tractări", ShopCategory.Tractari, false),
-        new("Altele", ShopCategory.Altele, false),
+        new("Altele", ShopCategory.Altele, false)
     ];
 
     private static readonly List<string> Counties =
@@ -228,23 +237,26 @@
         await LoadShops();
     }
 
-    private static ShopCategory? SlugToCategory(string? slug) => slug switch
+    private static ShopCategory? SlugToCategory(string? slug)
     {
-        "service-auto"  => ShopCategory.ServiceAuto,
-        "piese-auto"    => ShopCategory.PieseAuto,
-        "spalatorie"    => ShopCategory.Spalatorie,
-        "vopsitorie"    => ShopCategory.Vopsitorie,
-        "vulcanizare"   => ShopCategory.Vulcanizare,
-        "tuning"        => ShopCategory.Tuning,
-        "tractari"      => ShopCategory.Tractari,
-        "detailing"     => ShopCategory.Detailing,
-        "itp"           => ShopCategory.ITP,
-        "service-moto"  => ShopCategory.ServiceMoto,
-        "piese-moto"    => ShopCategory.PieseMoto,
-        "motociclete"   => ShopCategory.ServiceMoto,
-        "altele"        => ShopCategory.Altele,
-        _               => null
-    };
+        return slug switch
+        {
+            "service-auto" => ShopCategory.ServiceAuto,
+            "piese-auto" => ShopCategory.PieseAuto,
+            "spalatorie" => ShopCategory.Spalatorie,
+            "vopsitorie" => ShopCategory.Vopsitorie,
+            "vulcanizare" => ShopCategory.Vulcanizare,
+            "tuning" => ShopCategory.Tuning,
+            "tractari" => ShopCategory.Tractari,
+            "detailing" => ShopCategory.Detailing,
+            "itp" => ShopCategory.ITP,
+            "service-moto" => ShopCategory.ServiceMoto,
+            "piese-moto" => ShopCategory.PieseMoto,
+            "motociclete" => ShopCategory.ServiceMoto,
+            "altele" => ShopCategory.Altele,
+            _ => null
+        };
+    }
 
     private async Task LoadShops()
     {
@@ -261,19 +273,23 @@
         _results = SortOrder switch
         {
             "reviews" => items.Select(MapToCard).OrderByDescending(s => s.ReviewCount ?? 0).ToList(),
-            _ => items.Select(MapToCard).ToList(),
+            _ => items.Select(MapToCard).ToList()
         };
         _loading = false;
     }
 
-    private async Task FilterChanged() { CurrentPage = 1; await LoadShops(); }
+    private async Task FilterChanged()
+    {
+        CurrentPage = 1;
+        await LoadShops();
+    }
 
     private void SortChanged()
     {
         _results = SortOrder switch
         {
             "reviews" => [.. _results.OrderByDescending(s => s.ReviewCount ?? 0)],
-            _ => [.. _results.OrderByDescending(s => s.Rating)],
+            _ => [.. _results.OrderByDescending(s => s.Rating)]
         };
     }
 
@@ -286,7 +302,12 @@
         await LoadShops();
     }
 
-    private async Task SetMinRating(int rating) { MinRating = rating; CurrentPage = 1; await LoadShops(); }
+    private async Task SetMinRating(int rating)
+    {
+        MinRating = rating;
+        CurrentPage = 1;
+        await LoadShops();
+    }
 
     private async Task ResetFilters()
     {
@@ -300,30 +321,55 @@
         await LoadShops();
     }
 
-    private async Task GoToPage(int page) { CurrentPage = page; await LoadShops(); }
-    private async Task PrevPage() { if (CurrentPage > 1) { CurrentPage--; await LoadShops(); } }
-    private async Task NextPage() { if (CurrentPage < TotalPages) { CurrentPage++; await LoadShops(); } }
+    private async Task GoToPage(int page)
+    {
+        CurrentPage = page;
+        await LoadShops();
+    }
+
+    private async Task PrevPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            await LoadShops();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            CurrentPage++;
+            await LoadShops();
+        }
+    }
 
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(_totalCount / (double)PageSize));
 
     private string? _selectedCategoryName => Categories.FirstOrDefault(c => c.Selected)?.Name;
 
-    private string GetPageClass(int pageNum) =>
-        pageNum == CurrentPage ? "bg-brand-red text-white shadow-sm" : "text-text-warm hover:bg-surface-container";
+    private string GetPageClass(int pageNum)
+    {
+        return pageNum == CurrentPage ? "bg-brand-red text-white shadow-sm" : "text-text-warm hover:bg-surface-container";
+    }
 
-    private static ShopCardModel MapToCard(Domain.Entities.Shop s) => new(
-        Id: s.Id,
-        Name: s.Name,
-        Category: CategoryDisplayName(s.Category),
-        Location: s.City,
-        Rating: s.AverageRating,
-        Description: s.Description,
-        ImageUrl: s.Photos.FirstOrDefault()?.Url ?? "",
-        ReviewCount: s.ReviewCount,
-        IsOpen: ComputeIsOpen(s)
-    );
+    private static ShopCardModel MapToCard(Shop s)
+    {
+        return new ShopCardModel(
+            s.Id,
+            s.Name,
+            CategoryDisplayName(s.Category),
+            s.City,
+            s.AverageRating,
+            s.Description,
+            s.Photos.FirstOrDefault()?.Url ?? "",
+            ReviewCount: s.ReviewCount,
+            IsOpen: ComputeIsOpen(s)
+        );
+    }
 
-    private static bool? ComputeIsOpen(Domain.Entities.Shop s)
+    private static bool? ComputeIsOpen(Shop s)
     {
         if (!s.Hours.Any()) return null;
         var now = DateTime.UtcNow;
@@ -341,4 +387,5 @@
         public ShopCategory Value { get; } = value;
         public bool Selected { get; set; } = selected;
     }
+
 }

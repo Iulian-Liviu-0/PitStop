@@ -14,8 +14,8 @@ try
 
     builder.Host.UseSerilog((ctx, services, config) =>
         config.ReadFrom.Configuration(ctx.Configuration)
-              .ReadFrom.Services(services)
-              .Enrich.FromLogContext());
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext());
 
     builder.Services.AddRazorComponents().AddInteractiveServerComponents();
     builder.Services.AddDatabase(builder.Configuration);
@@ -32,12 +32,12 @@ try
     if (app.Configuration.GetValue<bool>("ResetForRelease"))
         await DataCleaner.ClearAllAsync(app.Services);
 
-    if(app.Configuration.GetValue<bool>("SeedData"))
-        await DataSeeder.SeedAllAsync(app.Services, seedDevData: true);
-    
+    if (app.Configuration.GetValue<bool>("SeedData"))
+        await DataSeeder.SeedAllAsync(app.Services, true);
+
     if (!app.Environment.IsDevelopment())
     {
-        app.UseExceptionHandler("/Error", createScopeForErrors: true);
+        app.UseExceptionHandler("/Error", true);
         app.UseHsts();
     }
 
