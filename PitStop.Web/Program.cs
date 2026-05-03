@@ -33,7 +33,8 @@ try
         await DataCleaner.ClearAllAsync(app.Services);
 
     if(app.Configuration.GetValue<bool>("SeedData"))
-        await DataSeeder.SeedAllAsync(app.Services);
+        await DataSeeder.SeedAllAsync(app.Services, seedDevData: true);
+    
     if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Error", createScopeForErrors: true);
