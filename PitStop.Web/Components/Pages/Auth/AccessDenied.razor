@@ -1,0 +1,20 @@
+@page "/auth/access-denied"
+@layout MainLayout
+
+<PageTitle>Acces interzis - PitStop</PageTitle>
+
+<section class="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 py-24">
+    <span class="material-symbols-outlined text-8xl text-border-light mb-6">lock</span>
+    <h1 class="font-black text-6xl text-text-main mb-4" style="font-family: Manrope, sans-serif;">403</h1>
+    <p class="text-xl text-text-muted mb-8 max-w-md">
+        Nu ai permisiunea de a accesa această pagină.
+    </p>
+    <div class="flex gap-3">
+        <a href="/" class="bg-brand-red hover:bg-brand-red-dark text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-sm">
+            Înapoi acasă
+        </a>
+        <a href="/auth/login" class="border border-border-light hover:bg-surface-low text-text-muted font-semibold px-8 py-3 rounded-lg transition-colors">
+            Autentifică-te
+        </a>
+    </div>
+</section>

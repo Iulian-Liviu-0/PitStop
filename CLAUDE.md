@@ -195,6 +195,7 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 | `/serviciu/{id}` | ✅ Done | `ShopProfile.razor` |
 | `/auth/login` | ✅ Done | `Auth/Login.razor` |
 | `/auth/register` | ✅ Done | `Auth/Register.razor` (redirects to `/auth/login?tab=register`) |
+| `/auth/access-denied` | ✅ Done | `Auth/AccessDenied.razor` |
 | `/not-found` | ✅ Done | `NotFound.razor` |
 | `/Error` | ✅ Done | `Error.razor` |
 | `/dashboard` | ✅ Done | `User/Dashboard.razor` |
