@@ -199,12 +199,14 @@ public class ShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<Sho
         await ctx.SaveChangesAsync();
     }
 
-    public async Task SetStatusAsync(int shopId, ShopStatus status)
+    public async Task SetStatusAsync(int shopId, ShopStatus status, string? reason = null)
     {
         await using var ctx = await factory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
+        var disabledReason = status == ShopStatus.Inactive ? reason : null;
         await ctx.Shops.Where(s => s.Id == shopId).ExecuteUpdateAsync(s => s
             .SetProperty(p => p.Status, status)
+            .SetProperty(p => p.DisabledReason, disabledReason)
             .SetProperty(p => p.UpdatedAt, now));
         logger.LogInformation("Shop status changed: id={ShopId} status={Status}", shopId, status);
     }

@@ -13,7 +13,14 @@
       "Bash(dotnet restore *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(dotnet ef migrations *)",
+      "Bash(~/.dotnet/tools/dotnet-ef migrations *)",
+      "Bash(MSBUILDTERMINALLOGGER=off dotnet build PitStop.sln -p:AllowMissingPrunePackageData=true)",
+      "Bash(MSBUILDTERMINALLOGGER=off ~/.dotnet/tools/dotnet-ef migrations *)",
+      "Bash(~/.dotnet/tools/dotnet-ef database *)",
+      "Bash(git reset *)",
+      "Bash(git commit *)"
     ]
   }
 }

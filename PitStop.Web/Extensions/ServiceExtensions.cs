@@ -77,8 +77,9 @@ internal static class ServiceExtensions
     {
         services.AddAuthorization(options =>
         {
-            options.AddPolicy("ShopOwner", policy => policy.RequireRole("ShopOwner"));
-            options.AddPolicy("Admin",     policy => policy.RequireRole("Admin"));
+            options.AddPolicy("ShopOwner",  policy => policy.RequireRole("ShopOwner"));
+            options.AddPolicy("Admin",      policy => policy.RequireRole("Admin"));
+            options.AddPolicy("SuperAdmin", policy => policy.RequireRole("SuperAdmin"));
         });
 
         return services;

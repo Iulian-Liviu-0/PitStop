@@ -16,6 +16,7 @@ public class Shop : BaseEntity
     public string? CoverImage { get; set; }
     public ShopCategory Category { get; set; }
     public ShopStatus Status { get; set; } = ShopStatus.Pending;
+    public string? DisabledReason { get; set; }
 
     /// <summary>Identity user ID of the shop owner. Null until owner completes setup.</summary>
     public string? OwnerId { get; set; }

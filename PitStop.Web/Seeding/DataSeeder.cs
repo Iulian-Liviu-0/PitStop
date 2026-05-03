@@ -13,6 +13,7 @@ internal static class DataSeeder
     {
         await SeedRolesAsync(services);
         await SeedAdminAsync(services);
+        await SeedSuperAdminAsync(services);
         if (!seedDevData) return;
         await SeedUsersAsync(services);
         await SeedShopsAsync(services);
@@ -24,9 +25,29 @@ internal static class DataSeeder
         await using var scope = services.CreateAsyncScope();
         var roleManager       = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-        foreach (var role in new[] { "Admin", "ShopOwner", "User" })
+        foreach (var role in new[] { "SuperAdmin", "Admin", "ShopOwner", "User" })
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
+    }
+
+    private static async Task SeedSuperAdminAsync(IServiceProvider services)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var userManager       = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        const string email = "superadmin@pitstop.ro";
+        if (await userManager.FindByEmailAsync(email) is not null) return;
+
+        var superAdmin = new ApplicationUser
+        {
+            UserName       = email,
+            Email          = email,
+            FullName       = "Super Admin",
+            EmailConfirmed = true,
+            CreatedAt      = DateTime.UtcNow,
+        };
+        await userManager.CreateAsync(superAdmin, "SuperAdmin1234!");
+        await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
     }
 
     private static async Task SeedAdminAsync(IServiceProvider services)

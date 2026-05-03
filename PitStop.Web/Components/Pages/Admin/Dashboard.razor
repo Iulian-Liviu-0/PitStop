@@ -9,6 +9,7 @@
 @inject IReviewRepository ReviewRepo
 @inject UserManager<ApplicationUser> UserMgr
 @inject IEmailService EmailSvc
+@inject IJSRuntime JS
 
 <PageTitle>Admin - PitStop</PageTitle>
 
@@ -18,6 +19,10 @@
         <div>
             <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Panou de administrare</p>
             <h1 class="font-black text-3xl tracking-tight" style="font-family: Manrope, sans-serif;">PitStop Admin</h1>
+            @if (_isSuperAdmin)
+            {
+                <span class="mt-2 inline-block px-2.5 py-1 bg-brand-red text-white text-xs font-bold rounded-full">Super Admin</span>
+            }
         </div>
         <span class="material-symbols-outlined text-6xl text-white/20">admin_panel_settings</span>
     </div>
@@ -27,7 +32,7 @@
 <div class="bg-surface-container border-b border-border-light">
     <div class="max-w-screen-xl mx-auto px-6 md:px-12 py-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl p-5 border border-border-light flex items-center gap-4">
-            <div class="w-10 h-10 rounded-lg bg-brand-red-light flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 rounded-lg bg-brand-red-faint flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-brand-red text-xl">store</span>
             </div>
             <div>
@@ -83,7 +88,6 @@
 
     @if (_tab == "requests")
     {
-        <!-- Requests tab -->
         <div class="bg-white rounded-xl border border-border-light overflow-hidden">
             <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
                 <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Toate cererile</h2>
@@ -170,17 +174,23 @@
     }
     else if (_tab == "shops")
     {
-        <!-- Shops tab -->
         <div class="bg-white rounded-xl border border-border-light overflow-hidden">
-            <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
+            <div class="px-6 py-4 border-b border-border-light flex items-center justify-between flex-wrap gap-3">
                 <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Toate serviciile</h2>
-                <span class="text-sm text-text-muted">@_shops.Count înregistrări</span>
+                <input @bind="_shopSearch" @bind:event="oninput" placeholder="Caută după nume sau oraș..."
+                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red w-64" />
             </div>
-            @if (_shops.Count == 0)
+            @{
+                var filteredShops = string.IsNullOrWhiteSpace(_shopSearch)
+                    ? _shops
+                    : _shops.Where(s => s.Name.Contains(_shopSearch, StringComparison.OrdinalIgnoreCase) ||
+                                        s.City.Contains(_shopSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+            @if (filteredShops.Count == 0)
             {
                 <div class="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
                     <span class="material-symbols-outlined text-4xl">store</span>
-                    <p class="text-sm">Niciun serviciu adăugat.</p>
+                    <p class="text-sm">Niciun serviciu găsit.</p>
                 </div>
             }
             else
@@ -198,10 +208,18 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border-light">
-                            @foreach (var shop in _shops)
+                            @foreach (var shop in filteredShops)
                             {
                                 <tr class="hover:bg-surface-container/50 transition-colors">
-                                    <td class="px-5 py-4 font-semibold text-text-main">@shop.Name</td>
+                                    <td class="px-5 py-4">
+                                        <p class="font-semibold text-text-main">@shop.Name</p>
+                                        @if (shop.Status == ShopStatus.Inactive && shop.DisabledReason is { Length: > 0 })
+                                        {
+                                            <p class="text-xs text-brand-red mt-0.5 max-w-[220px] truncate" title="@shop.DisabledReason">
+                                                Motiv: @shop.DisabledReason
+                                            </p>
+                                        }
+                                    </td>
                                     <td class="px-5 py-4 text-text-muted">@CategoryLabel(shop.Category)</td>
                                     <td class="px-5 py-4 text-text-muted">@shop.City</td>
                                     <td class="px-5 py-4">
@@ -217,11 +235,25 @@
                                         </div>
                                     </td>
                                     <td class="px-5 py-4">
-                                        <div class="flex gap-2">
-                                            <button @onclick="async () => await ToggleShopStatus(shop)"
-                                                    class="px-3 py-1.5 border text-xs font-bold rounded transition-colors @(shop.Status == ShopStatus.Active ? "border-red-200 text-brand-red hover:bg-brand-red-light" : "border-green-200 text-green-600 hover:bg-green-50")">
-                                                @(shop.Status == ShopStatus.Active ? "Dezactivează" : "Activează")
+                                        <div class="flex gap-2 flex-wrap">
+                                            <button @onclick="() => OpenEditShop(shop)"
+                                                    class="px-3 py-1.5 border border-border-light text-xs font-bold rounded text-text-muted hover:text-text-main hover:bg-surface-container transition-colors">
+                                                Editează
                                             </button>
+                                            @if (shop.Status == ShopStatus.Active)
+                                            {
+                                                <button @onclick="() => OpenDisableShop(shop)"
+                                                        class="px-3 py-1.5 border border-red-200 text-xs font-bold rounded text-brand-red hover:bg-brand-red-faint transition-colors">
+                                                    Dezactivează
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button @onclick="async () => await EnableShop(shop)"
+                                                        class="px-3 py-1.5 border border-green-200 text-xs font-bold rounded text-green-600 hover:bg-green-50 transition-colors">
+                                                    Activează
+                                                </button>
+                                            }
                                             <a href="/serviciu/@shop.Id" target="_blank"
                                                class="px-3 py-1.5 border border-border-light text-xs font-bold rounded text-text-muted hover:text-text-main hover:bg-surface-container transition-colors">
                                                 Vizualizează
@@ -238,17 +270,37 @@
     }
     else if (_tab == "users")
     {
-        <!-- Users tab -->
         <div class="bg-white rounded-xl border border-border-light overflow-hidden">
-            <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
-                <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Toți utilizatorii</h2>
-                <span class="text-sm text-text-muted">@_users.Count înregistrări</span>
+            <div class="px-6 py-4 border-b border-border-light flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                    <h2 class="font-bold text-text-main" style="font-family: Manrope, sans-serif;">Utilizatori</h2>
+                    <div class="flex rounded-lg border border-border-light overflow-hidden text-xs font-semibold">
+                        <button @onclick='() => _showDisabledUsers = false'
+                                class="px-3 py-1.5 transition-colors @(!_showDisabledUsers ? "bg-brand-red text-white" : "text-text-muted hover:bg-surface-low")">
+                            Activi
+                        </button>
+                        <button @onclick='() => _showDisabledUsers = true'
+                                class="px-3 py-1.5 transition-colors @(_showDisabledUsers ? "bg-brand-red text-white" : "text-text-muted hover:bg-surface-low")">
+                            Dezactivați
+                        </button>
+                    </div>
+                </div>
+                <input @bind="_userSearch" @bind:event="oninput" placeholder="Caută după nume sau email..."
+                       class="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red w-64" />
             </div>
-            @if (_users.Count == 0)
+            @{
+                var filteredUsers = _users
+                    .Where(u => u.IsDisabled == _showDisabledUsers)
+                    .Where(u => string.IsNullOrWhiteSpace(_userSearch) ||
+                                (u.FullName ?? "").Contains(_userSearch, StringComparison.OrdinalIgnoreCase) ||
+                                (u.Email ?? "").Contains(_userSearch, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            @if (filteredUsers.Count == 0)
             {
                 <div class="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
                     <span class="material-symbols-outlined text-4xl">group</span>
-                    <p class="text-sm">Niciun utilizator înregistrat.</p>
+                    <p class="text-sm">Niciun utilizator găsit.</p>
                 </div>
             }
             else
@@ -265,40 +317,88 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border-light">
-                            @foreach (var user in _users)
+                            @foreach (var user in filteredUsers)
                             {
                                 var role = _userRoles.GetValueOrDefault(user.Id, "User");
-                                var isLocked = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
-                                <tr class="hover:bg-surface-container/50 transition-colors @(isLocked ? "opacity-60" : "")">
+                                var isLocked = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow && !user.IsDisabled;
+                                var isSuperAdminUser = role == "SuperAdmin";
+                                var isAdminUser = role == "Admin";
+                                var canAct = isSuperAdminUser ? false : isAdminUser ? _isSuperAdmin : true;
+                                <tr class="hover:bg-surface-container/50 transition-colors @(user.IsDisabled ? "opacity-60" : "")">
                                     <td class="px-5 py-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-brand-red-faint text-brand-red flex items-center justify-center text-xs font-bold">
-                                                @Initials(user.FullName ?? user.Email ?? "?")
+                                            <div class="w-8 h-8 rounded-full bg-brand-red-faint text-brand-red flex items-center justify-center text-xs font-bold shrink-0">
+                                                @Initials(user.FullName is { Length: > 0 } fn ? fn : user.Email ?? "?")
                                             </div>
                                             <div>
                                                 <span class="font-medium text-text-main">@(user.FullName is { Length: > 0 } n ? n : "–")</span>
-                                                @if (isLocked)
+                                                @if (user.IsDisabled)
                                                 {
-                                                    <span class="ml-2 text-[10px] font-bold bg-red-100 text-brand-red px-1.5 py-0.5 rounded">Blocat</span>
+                                                    <span class="ml-2 text-[10px] font-bold bg-red-100 text-brand-red px-1.5 py-0.5 rounded">Dezactivat</span>
+                                                }
+                                                else if (isLocked)
+                                                {
+                                                    <span class="ml-2 text-[10px] font-bold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">Blocat</span>
+                                                }
+                                                @if (user.IsDisabled && user.DisabledReason is { Length: > 0 })
+                                                {
+                                                    <p class="text-xs text-text-muted mt-0.5 max-w-[200px] truncate" title="@user.DisabledReason">@user.DisabledReason</p>
                                                 }
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-5 py-4 text-text-muted">@user.Email</td>
                                     <td class="px-5 py-4">
-                                        <select value="@role" @onchange="async e => await ChangeRole(user, e.Value?.ToString() ?? role)"
-                                                class="border border-border-light rounded px-2 py-1 text-xs font-semibold bg-white focus:outline-none focus:ring-1 focus:ring-brand-red @RoleBadgeClass(role)">
-                                            <option value="User">User</option>
-                                            <option value="ShopOwner">ShopOwner</option>
-                                            <option value="Admin">Admin</option>
-                                        </select>
+                                        @if (isSuperAdminUser || !canAct)
+                                        {
+                                            <span class="px-2 py-1 rounded text-xs font-bold @RoleBadgeClass(role)">@role</span>
+                                        }
+                                        else
+                                        {
+                                            <select value="@role" @onchange="async e => await ChangeRole(user, e.Value?.ToString() ?? role)"
+                                                    class="border border-border-light rounded px-2 py-1 text-xs font-semibold bg-white focus:outline-none focus:ring-1 focus:ring-brand-red @RoleBadgeClass(role)">
+                                                <option value="User">User</option>
+                                                <option value="ShopOwner">ShopOwner</option>
+                                                @if (_isSuperAdmin)
+                                                {
+                                                    <option value="Admin">Admin</option>
+                                                }
+                                            </select>
+                                        }
                                     </td>
                                     <td class="px-5 py-4 text-text-muted text-xs">@user.CreatedAt.ToString("dd MMM yyyy")</td>
                                     <td class="px-5 py-4">
-                                        <button @onclick="async () => await ToggleLock(user)"
-                                                class="px-3 py-1.5 border text-xs font-bold rounded transition-colors @(isLocked ? "border-green-200 text-green-600 hover:bg-green-50" : "border-red-200 text-brand-red hover:bg-brand-red-faint")">
-                                            @(isLocked ? "Deblochează" : "Blochează")
-                                        </button>
+                                        @if (canAct)
+                                        {
+                                            <div class="flex gap-2 flex-wrap">
+                                                @if (user.IsDisabled)
+                                                {
+                                                    <button @onclick="async () => await RestoreUser(user)"
+                                                            class="px-3 py-1.5 border border-green-200 text-xs font-bold rounded text-green-600 hover:bg-green-50 transition-colors">
+                                                        Restaurează
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button @onclick="() => OpenEditUser(user)"
+                                                            class="px-3 py-1.5 border border-border-light text-xs font-bold rounded text-text-muted hover:text-text-main hover:bg-surface-container transition-colors">
+                                                        Editează
+                                                    </button>
+                                                    <button @onclick="() => OpenResetPassword(user)"
+                                                            class="px-3 py-1.5 border border-border-light text-xs font-bold rounded text-text-muted hover:text-text-main hover:bg-surface-container transition-colors">
+                                                        Resetează parola
+                                                    </button>
+                                                    <button @onclick="async () => await ToggleLock(user)"
+                                                            class="px-3 py-1.5 border text-xs font-bold rounded transition-colors @(isLocked ? "border-green-200 text-green-600 hover:bg-green-50" : "border-orange-200 text-orange-600 hover:bg-orange-50")">
+                                                        @(isLocked ? "Deblochează" : "Blochează")
+                                                    </button>
+                                                    <button @onclick="() => OpenDisableUser(user)"
+                                                            class="px-3 py-1.5 border border-red-200 text-xs font-bold rounded text-brand-red hover:bg-brand-red-faint transition-colors">
+                                                        Dezactivează
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -310,7 +410,6 @@
     }
     else
     {
-        <!-- Reviews tab -->
         @if (!_reviewsLoaded)
         {
             <div class="flex items-center justify-center py-16 text-text-muted gap-2">
@@ -390,8 +489,189 @@
 
 </div>
 
+<!-- ── Edit Shop Modal ── -->
+@if (_editingShop is not null)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="() => _editingShop = null">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto" @onclick:stopPropagation="true">
+            <h3 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Editează serviciu</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Nume</label>
+                    <input @bind="_esName" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Descriere</label>
+                    <textarea @bind="_esDescription" rows="3" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red resize-none"></textarea>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Adresă</label>
+                    <input @bind="_esAddress" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Oraș</label>
+                    <input @bind="_esCity" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Județ</label>
+                    <input @bind="_esCounty" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Telefon</label>
+                    <input @bind="_esPhone" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Email</label>
+                    <input @bind="_esEmail" type="email" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Website</label>
+                    <input @bind="_esWebsite" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+            </div>
+            @if (_esError is { Length: > 0 })
+            {
+                <p class="text-sm text-brand-red mt-4">@_esError</p>
+            }
+            <div class="flex gap-3 mt-6">
+                <button @onclick="() => _editingShop = null"
+                        class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
+                    Anulează
+                </button>
+                <button @onclick="SaveShop" disabled="@_esSaving"
+                        class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-all text-sm">
+                    @(_esSaving ? "Se salvează..." : "Salvează")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Edit User Modal ── -->
+@if (_editingUser is not null)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="() => _editingUser = null">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8" @onclick:stopPropagation="true">
+            <h3 class="font-bold text-xl text-text-main mb-6" style="font-family: Manrope, sans-serif;">Editează utilizator</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Nume complet</label>
+                    <input @bind="_euFullName" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Email</label>
+                    <input @bind="_euEmail" type="email" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
+                </div>
+            </div>
+            @if (_euError is { Length: > 0 })
+            {
+                <p class="text-sm text-brand-red mt-3">@_euError</p>
+            }
+            <div class="flex gap-3 mt-6">
+                <button @onclick="() => _editingUser = null"
+                        class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
+                    Anulează
+                </button>
+                <button @onclick="SaveUser" disabled="@_euSaving"
+                        class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-all text-sm">
+                    @(_euSaving ? "Se salvează..." : "Salvează")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Disable User Modal ── -->
+@if (_disablingUser is not null)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="() => _disablingUser = null">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8" @onclick:stopPropagation="true">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="material-symbols-outlined text-brand-red">person_off</span>
+                <h3 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">Dezactivează cont</h3>
+            </div>
+            <p class="text-sm text-text-muted mb-4">
+                Contul lui <strong>@(_disablingUser.FullName is { Length: > 0 } n ? n : _disablingUser.Email)</strong> va fi dezactivat și nu va mai putea accesa platforma.
+            </p>
+            <label class="block text-xs font-semibold text-text-muted mb-1">Motiv (obligatoriu)</label>
+            <textarea @bind="_disableUserReason" rows="3" placeholder="Descrie motivul dezactivării..."
+                      class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red resize-none mb-4"></textarea>
+            <div class="flex gap-3">
+                <button @onclick="() => _disablingUser = null"
+                        class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
+                    Anulează
+                </button>
+                <button @onclick="ConfirmDisableUser" disabled="@(string.IsNullOrWhiteSpace(_disableUserReason))"
+                        class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-all text-sm">
+                    Dezactivează
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Disable Shop Modal ── -->
+@if (_disablingShop is not null)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="() => _disablingShop = null">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8" @onclick:stopPropagation="true">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="material-symbols-outlined text-brand-red">store_off</span>
+                <h3 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">Dezactivează serviciu</h3>
+            </div>
+            <p class="text-sm text-text-muted mb-4">
+                Serviciul <strong>@_disablingShop.Name</strong> va fi ascuns din rezultatele publice iar proprietarul va vedea motivul dezactivării.
+            </p>
+            <label class="block text-xs font-semibold text-text-muted mb-1">Motiv (obligatoriu)</label>
+            <textarea @bind="_disableShopReason" rows="3" placeholder="Descrie motivul dezactivării..."
+                      class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red resize-none mb-4"></textarea>
+            <div class="flex gap-3">
+                <button @onclick="() => _disablingShop = null"
+                        class="flex-1 py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
+                    Anulează
+                </button>
+                <button @onclick="ConfirmDisableShop" disabled="@(string.IsNullOrWhiteSpace(_disableShopReason))"
+                        class="flex-1 py-3 bg-brand-red text-white font-bold rounded-lg hover:bg-brand-red-dark disabled:opacity-50 transition-all text-sm">
+                    Dezactivează
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Reset Password Modal ── -->
+@if (_resetPwUser is not null)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" @onclick="() => _resetPwUser = null">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8" @onclick:stopPropagation="true">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="material-symbols-outlined text-brand-red">lock_reset</span>
+                <h3 class="font-bold text-xl text-text-main" style="font-family: Manrope, sans-serif;">Resetare parolă</h3>
+            </div>
+            <p class="text-sm text-text-muted mb-4">
+                Link de resetare pentru <strong>@(_resetPwUser.FullName is { Length: > 0 } n ? n : _resetPwUser.Email)</strong>. Trimite-l utilizatorului — este valabil o singură dată.
+            </p>
+            <div class="flex gap-2 mb-4">
+                <input value="@_resetPwUrl" readonly
+                       class="flex-1 border border-border-light rounded-lg px-3 py-2 text-xs text-text-muted bg-surface-container focus:outline-none" />
+                <button @onclick='async () => await JS.InvokeVoidAsync("copyToClipboard", _resetPwUrl)'
+                        class="px-4 py-2 bg-brand-red text-white text-xs font-bold rounded-lg hover:bg-brand-red-dark transition-colors shrink-0">
+                    Copiază
+                </button>
+            </div>
+            <button @onclick="() => _resetPwUser = null"
+                    class="w-full py-3 border border-border-light text-text-muted font-semibold rounded-lg hover:bg-surface-low transition-colors text-sm">
+                Închide
+            </button>
+        </div>
+    </div>
+}
+
 @code {
     private string _tab = "requests";
+    private bool _isSuperAdmin;
+    private string _currentAdminId = string.Empty;
+
     private List<ShopRequest> _requests = [];
     private List<Shop> _shops = [];
     private List<ApplicationUser> _users = [];
@@ -403,11 +683,37 @@
     private int? _rejectingId;
     private string _rejectNote = "";
 
-    // Reviews tab
+    private string _shopSearch = "";
+    private string _userSearch = "";
+    private bool _showDisabledUsers;
+
     private List<Review> _adminReviews = [];
     private bool _reviewsLoaded;
     private int _adminReviewPage = 1;
     private const int AdminReviewPageSize = 20;
+
+    // Edit shop state
+    private Shop? _editingShop;
+    private string _esName = "", _esDescription = "", _esAddress = "", _esCity = "",
+                   _esCounty = "", _esPhone = "", _esEmail = "", _esWebsite = "";
+    private bool _esSaving;
+    private string _esError = "";
+
+    // Edit user state
+    private ApplicationUser? _editingUser;
+    private string _euFullName = "", _euEmail = "";
+    private bool _euSaving;
+    private string _euError = "";
+
+    // Disable modals
+    private ApplicationUser? _disablingUser;
+    private string _disableUserReason = "";
+    private Shop? _disablingShop;
+    private string _disableShopReason = "";
+
+    // Reset password
+    private ApplicationUser? _resetPwUser;
+    private string _resetPwUrl = "";
 
     private (string id, string label)[] Tabs => [
         ("requests", $"Cereri ({_pendingCount})"),
@@ -419,23 +725,25 @@
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (!state.User.IsInRole("Admin"))
+        if (!state.User.IsInRole("Admin") && !state.User.IsInRole("SuperAdmin"))
         {
             Nav.NavigateTo("/auth/login", forceLoad: true);
             return;
         }
+        _isSuperAdmin = state.User.IsInRole("SuperAdmin");
+        _currentAdminId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
         await LoadData();
     }
 
     private async Task LoadData()
     {
         _requests = await RequestRepo.GetAllAsync();
-        _shops = await ShopRepo.GetAllAsync();
-        _users = await UserMgr.Users.ToListAsync();
+        _shops    = await ShopRepo.GetAllAsync();
+        _users    = await UserMgr.Users.ToListAsync();
         _reviewCount = await ReviewRepo.GetTotalCountAsync();
         _activeShops = _shops.Count(s => s.Status == ShopStatus.Active);
         _pendingCount = _requests.Count(r => r.Status == ShopRequestStatus.Pending);
-        _userCount = _users.Count;
+        _userCount = _users.Count(u => !u.IsDisabled);
 
         foreach (var user in _users)
         {
@@ -450,7 +758,7 @@
         if (tab == "reviews" && !_reviewsLoaded)
         {
             var (items, _) = await ReviewRepo.GetAllAsync(1, AdminReviewPageSize);
-            _adminReviews = items;
+            _adminReviews  = items;
             _reviewsLoaded = true;
         }
     }
@@ -470,6 +778,7 @@
         _reviewCount--;
     }
 
+    // ── Toggle lock (temporary, no reason) ─────────────────────────────────
     private async Task ToggleLock(ApplicationUser user)
     {
         await UserMgr.SetLockoutEnabledAsync(user, true);
@@ -486,30 +795,173 @@
         }
     }
 
+    // ── Soft-disable user ───────────────────────────────────────────────────
+    private void OpenDisableUser(ApplicationUser user) { _disablingUser = user; _disableUserReason = ""; }
+
+    private async Task ConfirmDisableUser()
+    {
+        if (_disablingUser is null || string.IsNullOrWhiteSpace(_disableUserReason)) return;
+        _disablingUser.IsDisabled        = true;
+        _disablingUser.DisabledReason    = _disableUserReason.Trim();
+        _disablingUser.DisabledAt        = DateTime.UtcNow;
+        _disablingUser.DisabledByAdminId = _currentAdminId;
+        await UserMgr.UpdateAsync(_disablingUser);
+        await UserMgr.SetLockoutEnabledAsync(_disablingUser, true);
+        await UserMgr.SetLockoutEndDateAsync(_disablingUser, DateTimeOffset.MaxValue);
+        _disablingUser.LockoutEnd = DateTimeOffset.MaxValue;
+        _disablingUser     = null;
+        _disableUserReason = "";
+        _userCount = _users.Count(u => !u.IsDisabled);
+    }
+
+    private async Task RestoreUser(ApplicationUser user)
+    {
+        user.IsDisabled        = false;
+        user.DisabledReason    = null;
+        user.DisabledAt        = null;
+        user.DisabledByAdminId = null;
+        await UserMgr.UpdateAsync(user);
+        await UserMgr.SetLockoutEndDateAsync(user, null);
+        user.LockoutEnd = null;
+        _userCount = _users.Count(u => !u.IsDisabled);
+    }
+
+    // ── Soft-disable shop ───────────────────────────────────────────────────
+    private void OpenDisableShop(Shop shop) { _disablingShop = shop; _disableShopReason = ""; }
+
+    private async Task ConfirmDisableShop()
+    {
+        if (_disablingShop is null || string.IsNullOrWhiteSpace(_disableShopReason)) return;
+        await ShopRepo.SetStatusAsync(_disablingShop.Id, ShopStatus.Inactive, _disableShopReason.Trim());
+        _disablingShop.Status         = ShopStatus.Inactive;
+        _disablingShop.DisabledReason = _disableShopReason.Trim();
+        _disablingShop     = null;
+        _disableShopReason = "";
+        _activeShops = _shops.Count(s => s.Status == ShopStatus.Active);
+    }
+
+    private async Task EnableShop(Shop shop)
+    {
+        await ShopRepo.SetStatusAsync(shop.Id, ShopStatus.Active);
+        shop.Status         = ShopStatus.Active;
+        shop.DisabledReason = null;
+        _activeShops = _shops.Count(s => s.Status == ShopStatus.Active);
+    }
+
+    // ── Edit shop ───────────────────────────────────────────────────────────
+    private void OpenEditShop(Shop shop)
+    {
+        _editingShop    = shop;
+        _esName         = shop.Name;
+        _esDescription  = shop.Description;
+        _esAddress      = shop.Address;
+        _esCity         = shop.City;
+        _esCounty       = shop.County;
+        _esPhone        = shop.Phone;
+        _esEmail        = shop.Email;
+        _esWebsite      = shop.Website ?? "";
+        _esError        = "";
+    }
+
+    private async Task SaveShop()
+    {
+        if (_editingShop is null) return;
+        _esSaving = true;
+        _esError  = "";
+        try
+        {
+            await ShopRepo.UpdateProfileAsync(_editingShop.Id, _esName, _esDescription, _esAddress,
+                _esCity, _esCounty, _esPhone, _esEmail,
+                string.IsNullOrWhiteSpace(_esWebsite) ? null : _esWebsite,
+                _editingShop.Sector);
+            _editingShop.Name        = _esName;
+            _editingShop.Description = _esDescription;
+            _editingShop.Address     = _esAddress;
+            _editingShop.City        = _esCity;
+            _editingShop.County      = _esCounty;
+            _editingShop.Phone       = _esPhone;
+            _editingShop.Email       = _esEmail;
+            _editingShop.Website     = string.IsNullOrWhiteSpace(_esWebsite) ? null : _esWebsite;
+            _editingShop = null;
+        }
+        catch { _esError = "A apărut o eroare. Încearcă din nou."; }
+        finally { _esSaving = false; }
+    }
+
+    // ── Edit user ───────────────────────────────────────────────────────────
+    private void OpenEditUser(ApplicationUser user)
+    {
+        _editingUser = user;
+        _euFullName  = user.FullName ?? "";
+        _euEmail     = user.Email   ?? "";
+        _euError     = "";
+    }
+
+    private async Task SaveUser()
+    {
+        if (_editingUser is null) return;
+        _euSaving = true;
+        _euError  = "";
+        try
+        {
+            _editingUser.FullName = _euFullName.Trim();
+            var trimmedEmail = _euEmail.Trim();
+            if (_editingUser.Email != trimmedEmail)
+            {
+                var token  = await UserMgr.GenerateChangeEmailTokenAsync(_editingUser, trimmedEmail);
+                var result = await UserMgr.ChangeEmailAsync(_editingUser, trimmedEmail, token);
+                if (!result.Succeeded)
+                {
+                    _euError = result.Errors.FirstOrDefault()?.Description ?? "Eroare la schimbarea emailului.";
+                    return;
+                }
+                await UserMgr.SetUserNameAsync(_editingUser, trimmedEmail);
+            }
+            else
+            {
+                await UserMgr.UpdateAsync(_editingUser);
+            }
+            _editingUser = null;
+        }
+        catch { _euError = "A apărut o eroare. Încearcă din nou."; }
+        finally { _euSaving = false; }
+    }
+
+    // ── Reset password ──────────────────────────────────────────────────────
+    private async Task OpenResetPassword(ApplicationUser user)
+    {
+        _resetPwUser = user;
+        var token    = await UserMgr.GeneratePasswordResetTokenAsync(user);
+        var baseUri  = Nav.BaseUri.TrimEnd('/');
+        _resetPwUrl  = $"{baseUri}/auth/set-password?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+    }
+
+    // ── Change role ─────────────────────────────────────────────────────────
     private async Task ChangeRole(ApplicationUser user, string newRole)
     {
         var current = _userRoles.GetValueOrDefault(user.Id, "User");
         if (current == newRole) return;
+        if ((current == "Admin" || newRole == "Admin") && !_isSuperAdmin) return;
         await UserMgr.RemoveFromRoleAsync(user, current);
         await UserMgr.AddToRoleAsync(user, newRole);
         _userRoles[user.Id] = newRole;
     }
 
+    // ── Request actions ─────────────────────────────────────────────────────
     private async Task ApproveRequest(int id)
     {
         var req = _requests.First(r => r.Id == id);
 
-        // 1. Create or find the ShopOwner account
         var owner = await UserMgr.FindByEmailAsync(req.Email);
         if (owner is null)
         {
             owner = new ApplicationUser
             {
-                UserName = req.Email,
-                Email = req.Email,
-                FullName = req.ContactPerson,
+                UserName       = req.Email,
+                Email          = req.Email,
+                FullName       = req.ContactPerson,
                 EmailConfirmed = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt      = DateTime.UtcNow
             };
             var createResult = await UserMgr.CreateAsync(owner);
             if (!createResult.Succeeded) return;
@@ -520,68 +972,57 @@
             await UserMgr.AddToRoleAsync(owner, "ShopOwner");
         }
 
-        // 2. Create the Shop record linked to the owner
         var shop = new Shop
         {
-            Name = req.ShopName,
+            Name        = req.ShopName,
             Description = req.Description ?? string.Empty,
-            Address = string.Empty,
-            City = req.City,
-            County = req.County,
-            Phone = req.Phone,
-            Email = req.Email,
-            Category = req.Category,
-            Status = ShopStatus.Active,
-            OwnerId = owner.Id
+            Address     = string.Empty,
+            City        = req.City,
+            County      = req.County,
+            Phone       = req.Phone,
+            Email       = req.Email,
+            Category    = req.Category,
+            Status      = ShopStatus.Active,
+            OwnerId     = owner.Id
         };
         await ShopRepo.CreateAsync(shop);
+        _shops.Add(shop);
 
-        // 3. Generate password reset token and send setup email
-        var token   = await UserMgr.GeneratePasswordResetTokenAsync(owner);
-        var baseUri = Nav.BaseUri.TrimEnd('/');
-        var setupUrl = $"{baseUri}/auth/set-password?userId={Uri.EscapeDataString(owner.Id)}&token={Uri.EscapeDataString(token)}";
+        var token      = await UserMgr.GeneratePasswordResetTokenAsync(owner);
+        var baseUri    = Nav.BaseUri.TrimEnd('/');
+        var setupUrl   = $"{baseUri}/auth/set-password?userId={Uri.EscapeDataString(owner.Id)}&token={Uri.EscapeDataString(token)}";
 
         var html = $"""
             <p>Bună, {req.ContactPerson}!</p>
             <p>Cererea ta pentru <strong>{req.ShopName}</strong> a fost aprobată pe PitStop.</p>
-            <p>Apasă butonul de mai jos pentru a-ți configura parola și a accesa panoul de administrare al serviciului tău:</p>
             <p style="margin:24px 0;">
               <a href="{setupUrl}" style="background:#C0392B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
                 Configurează contul
               </a>
             </p>
-            <p style="color:#888;font-size:12px;">Dacă nu ai trimis această cerere, ignoră acest email.</p>
             """;
 
         try { await EmailSvc.SendAsync(req.Email, "Contul tău PitStop a fost aprobat", html); }
         catch { /* email failure should not block approval */ }
 
-        // 4. Update the request status
         req.Status = ShopRequestStatus.Approved;
         await RequestRepo.UpdateAsync(req);
         _pendingCount = _requests.Count(r => r.Status == ShopRequestStatus.Pending);
-        _activeShops = _shops.Count(s => s.Status == ShopStatus.Active) + 1;
+        _activeShops  = _shops.Count(s => s.Status == ShopStatus.Active);
     }
 
     private async Task RejectRequest(int id)
     {
         var req = _requests.First(r => r.Id == id);
-        req.Status = ShopRequestStatus.Rejected;
+        req.Status    = ShopRequestStatus.Rejected;
         req.AdminNote = _rejectNote;
         await RequestRepo.UpdateAsync(req);
-        _rejectingId = null;
-        _rejectNote = "";
+        _rejectingId  = null;
+        _rejectNote   = "";
         _pendingCount = _requests.Count(r => r.Status == ShopRequestStatus.Pending);
     }
 
-    private async Task ToggleShopStatus(Shop shop)
-    {
-        var next = shop.Status == ShopStatus.Active ? ShopStatus.Inactive : ShopStatus.Active;
-        await ShopRepo.SetStatusAsync(shop.Id, next);
-        shop.Status = next;
-        _activeShops = _shops.Count(s => s.Status == ShopStatus.Active);
-    }
-
+    // ── Helpers ─────────────────────────────────────────────────────────────
     private static string RequestStatusClass(ShopRequestStatus s) => s switch
     {
         ShopRequestStatus.Pending  => "bg-orange-100 text-orange-600",
@@ -618,9 +1059,10 @@
 
     private static string RoleBadgeClass(string role) => role switch
     {
-        "Admin"     => "bg-brand-red-light text-brand-red",
-        "ShopOwner" => "bg-secondary-light text-secondary",
-        _           => "bg-surface-container text-text-muted"
+        "SuperAdmin" => "bg-brand-red-faint text-brand-red",
+        "Admin"      => "bg-brand-red-faint text-brand-red",
+        "ShopOwner"  => "bg-secondary-light text-secondary",
+        _            => "bg-surface-container text-text-muted"
     };
 
     private static string CategoryLabel(ShopCategory cat) => cat switch

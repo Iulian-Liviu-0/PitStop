@@ -47,6 +47,23 @@ else
         </div>
     </div>
 
+    @if (_shop.Status == ShopStatus.Inactive)
+    {
+        <div class="max-w-7xl mx-auto px-6 md:px-12 mt-6">
+            <div class="bg-brand-red-faint border-l-4 border-brand-red rounded-r-xl px-6 py-5 flex items-start gap-3">
+                <span class="material-symbols-outlined text-brand-red mt-0.5">block</span>
+                <div>
+                    <h2 class="font-bold text-brand-red" style="font-family: Manrope, sans-serif;">Serviciul tău a fost dezactivat</h2>
+                    @if (_shop.DisabledReason is { Length: > 0 })
+                    {
+                        <p class="text-sm text-text-muted mt-1">Motiv: @_shop.DisabledReason</p>
+                    }
+                    <p class="text-sm text-text-muted mt-1">Contactează echipa PitStop pentru a clarifica situația.</p>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Tab bar -->
     <div class="bg-white border-b border-border-light sticky top-0 z-10">
         <div class="max-w-7xl mx-auto px-6 md:px-12 flex gap-0 overflow-x-auto">
