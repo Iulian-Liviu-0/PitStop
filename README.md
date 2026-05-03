@@ -84,10 +84,13 @@ The project follows Clean Architecture principles:
 | Task | Command |
 |---|---|
 | Run Project | `dotnet run --project PitStop.Web` |
-| Watch Mode | `dotnet watch --project PitStop.Web` |
+| Watch Mode (hot reload) | `dotnet watch --project PitStop.Web` |
+| Tailwind CSS watcher | `cd PitStop.Web && npm run build:css` |
 | Build Solution | `dotnet build PitStop.sln` |
 | Add Migration | `dotnet ef migrations add <Name> --project PitStop.Infrastructure --startup-project PitStop.Web` |
 | Update Database | `dotnet ef database update --project PitStop.Infrastructure --startup-project PitStop.Web` |
+
+> **Hot reload in Rider:** Run the project normally and use the flame icon in the toolbar. For CSS changes, also run `npm run build:css` in a terminal — Tailwind is compiled separately and is not covered by Rider's hot reload.
 
 ## 🎨 UI & Design
 

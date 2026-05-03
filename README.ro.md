@@ -84,10 +84,13 @@ Proiectul urmează principiile Clean Architecture:
 | Sarcina | Comanda |
 |---|---|
 | Rulare Proiect | `dotnet run --project PitStop.Web` |
-| Mod Watch | `dotnet watch --project PitStop.Web` |
+| Mod Watch (hot reload) | `dotnet watch --project PitStop.Web` |
+| Watcher Tailwind CSS | `cd PitStop.Web && npm run build:css` |
 | Build Soluție | `dotnet build PitStop.sln` |
 | Adăugare Migrare | `dotnet ef migrations add <Nume> --project PitStop.Infrastructure --startup-project PitStop.Web` |
 | Actualizare Bază de Date | `dotnet ef database update --project PitStop.Infrastructure --startup-project PitStop.Web` |
+
+> **Hot reload în Rider:** Rulează proiectul normal și folosește iconița flacără din toolbar. Pentru modificări CSS, rulează și `npm run build:css` într-un terminal — Tailwind este compilat separat și nu este acoperit de hot reload-ul Rider.
 
 ## 🎨 UI & Design
 

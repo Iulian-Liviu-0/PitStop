@@ -221,6 +221,7 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 | `StatsSection` | `Shared/StatsSection.razor` | Home, AboutUs — `Large`: compact inline (Home) or full section with bg (AboutUs) |
 | `CTASection` | `Shared/CTASection.razor` | Home, AboutUs, Contact — `Variant`: `DarkHorizontal` or `RedCentered` |
 | `TeamSection` | `Shared/TeamSection.razor` | AboutUs |
+| `ShopReviewsSection` | `Shared/ShopProfile/ShopReviewsSection.razor` | ShopProfile — shows rating breakdown, reviews list, and write-review flow. Unauthenticated users see a note below the button and are redirected to login (with `returnUrl`) on click. |
 
 `ShopCardModel` and `ShopCardVariant` are defined in `Shared/ShopCard.cs` — use this record for all shop data, not page-local records.
 
@@ -232,6 +233,7 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 - **`<input type="time">` with a `string` property** — do NOT use `@bind` (Blazor infers `DateTime`). Use `value="@field" @onchange="e => field = e.Value?.ToString() ?? string.Empty"` instead.
 - **Inline `@onclick` lambdas with double quotes** — if the lambda body contains `""` (empty string), wrap the attribute in single quotes: `@onclick='() => { x = y ?? ""; }'`.
 - **`CategoryDisplayName` and `Initials`** — do NOT copy these into individual pages; use the shared `DisplayHelpers` class available via `_Imports.razor`.
+- **`<base href="/" />`** — do NOT use `<BasePath />` in `App.razor`. `<BasePath />` renders nothing when no path base is configured, which causes all `@Assets[...]` relative URLs to resolve against the current route path (e.g. `/auth/css/...` instead of `/css/...`). Use a hardcoded `<base href="/" />` instead. Similarly, script `src` values should use absolute paths (leading `/`).
 
 ### Auth conventions
 
