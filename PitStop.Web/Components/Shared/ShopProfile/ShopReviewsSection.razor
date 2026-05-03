@@ -85,6 +85,14 @@
             style="font-family: Manrope, sans-serif;">
         Scrie o recenzie
     </button>
+    @if (!IsAuthenticated)
+    {
+        <p class="text-center text-sm text-text-muted mt-3">
+            Recenziile sunt disponibile doar pentru utilizatorii înregistrați.
+            <a href="/auth/login?returnUrl=@Uri.EscapeDataString($"/serviciu/{ShopId}")" class="text-brand-red font-medium hover:underline">Autentifică-te</a>
+            pentru a lăsa o recenzie.
+        </p>
+    }
 </div>
 
 @if (_reviewOpen)

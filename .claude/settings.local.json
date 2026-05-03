@@ -10,7 +10,10 @@
       "Bash(xargs grep *)",
       "Bash(xargs ls *)",
       "Bash(dotnet package *)",
-      "Bash(dotnet restore *)"
+      "Bash(dotnet restore *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
