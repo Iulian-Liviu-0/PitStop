@@ -1084,7 +1084,8 @@
         var setupUrl = $"{baseUri}/auth/set-password?userId={Uri.EscapeDataString(owner.Id)}&token={Uri.EscapeDataString(token)}";
 
         var html = $"""
-{req.ContactPerson}!</p>
+                    {req.ContactPerson}
+                    !</p>
             <p>Cererea ta pentru <strong>{req.ShopName}</strong> a fost aprobată pe PitStop.</p>
             <p style="margin:24px 0;">
               <a href="{setupUrl}" style="background:#C0392B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
