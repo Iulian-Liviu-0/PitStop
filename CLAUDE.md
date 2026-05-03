@@ -5,13 +5,15 @@ This file provides guidance to Claude Code when working with this repository.
 ## Pending work (not yet implemented)
 
 - **Email sending** — `IEmailService` / `SmtpEmailService` (MailKit) is wired and called in
-  `Admin/Dashboard.razor` on shop request approval. SMTP credentials must be configured in
+  `Admin/Dashboard.razor` (shop request approval), `Auth/ForgotPassword` (reset link), and
+  `Contact.razor` (non-listing contact form subjects). SMTP credentials must be configured in
   `appsettings.json` (`Email:Host`, `Email:Port`, `Email:Username`, `Email:Password`,
-  `Email:From`) for emails to actually send — failures are silently swallowed so approval
-  is never blocked.
-- **Google OAuth** — The login button is UI-only. To wire it up, register a
-  Google OAuth app, add `AddGoogle(...)` in `Program.cs`, and handle the callback.
-  The callback should create/link the ASP.NET Identity user and sign them in.
+  `Email:From`) for emails to actually send — failures are silently swallowed so no user flow
+  is ever blocked.
+- **Google OAuth** — Code is fully wired: `/auth/google-login` issues the challenge,
+  `/auth/google-callback` handles the response (creates or links the `ApplicationUser`).
+  To activate, replace `YOUR_GOOGLE_CLIENT_ID` / `YOUR_GOOGLE_CLIENT_SECRET` in
+  `appsettings.json` with real credentials from the Google Cloud Console.
 
 ## What is PitStop?
 
@@ -201,6 +203,8 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 | `/auth/login` | ✅ Done | `Auth/Login.razor` |
 | `/auth/register` | ✅ Done | `Auth/Register.razor` (redirects to `/auth/login?tab=register`) |
 | `/auth/access-denied` | ✅ Done | `Auth/AccessDenied.razor` |
+| `/auth/forgot-password` | ✅ Done | `Auth/ForgotPassword.razor` |
+| `/auth/set-password` | ✅ Done | `Auth/SetPassword.razor` |
 | `/not-found` | ✅ Done | `NotFound.razor` |
 | `/Error` | ✅ Done | `Error.razor` |
 | `/dashboard` | ✅ Done | `User/Dashboard.razor` |
@@ -213,9 +217,10 @@ Brand color tokens (defined in `wwwroot/css/app.css` via Tailwind v4 `@theme`):
 - **`Search.razor`** — fully wired to `IShopRepository.SearchAsync`. Filters: keyword, category, county, min rating, open now. Pagination (6/page). Sort by recommended/rating/review count. Accepts `?q=` and `?categorie=` query params from Home category grid links.
 - **`ShopProfile.razor`** — loads shop by `Id` via `IShopRepository.GetByIdAsync`. Shows hero banner, about, services, gallery with lightbox, paginated reviews with rating breakdown and useful votes, sticky contact card, hours, Google Maps link, top 3 similar shops (same category), share popover (WhatsApp/Facebook/copy), report modal, favorites toggle. After loading the main shop, `IsFavoriteAsync` and `SearchAsync` (for similar shops) run in parallel via `Task.WhenAll`.
 - **`Auth/Login.razor`** — single page with tab switching (login/register). `[SupplyParameterFromQuery] Tab` activates the register tab. Supports `?returnUrl=` query param — passes it as a hidden field to `/auth/do-login`, which redirects there after successful login (local paths only, open-redirect protected). Login calls `SignInManager.PasswordSignInAsync`; register calls `UserManager.CreateAsync` + `AddToRoleAsync("User")` + `SignInAsync`. Google OAuth button is UI-only.
-- **`Contact.razor`** — Blazor form with `@onsubmit` + success/error state. All four fields (name, email, subject, message) are validated before submit; shows inline error on failure. FAQ accordion driven by `OpenFaq` (int?) — one item open at a time. Form data is saved to DB via `IShopRequestRepository.CreateAsync` only when subject is `"listing"` — other subjects show the success message but have no backend handler (email sending not yet implemented).
+- **`Contact.razor`** — Blazor form with `@onsubmit` + success/error state. All four fields (name, email, subject, message) are validated before submit; shows inline error on failure. FAQ accordion driven by `OpenFaq` (int?) — one item open at a time. Subject `"listing"` creates a `ShopRequest` in the DB; all other subjects try to send a notification email via `IEmailService` to the configured `Email:From` address (swallowed silently if SMTP is not set up).
 - **`AboutUs.razor`** — static page: mission/vision, process steps, hardcoded team member cards (Alexandru Popescu/CEO, Mihai Ionescu/Lead Dev, Elena Radu/Community Manager), CTA.
 - **`User/Dashboard.razor`** — favorites list, review history (with inline edit), profile settings (name/email), password change. Auth guard in `OnInitializedAsync` via `AuthenticationStateProvider`.
+- **`Auth/SetPassword.razor`** — password reset / first-time setup page. `OnParametersSetAsync` validates the token via `UserManager.VerifyUserTokenAsync` on page load — shows "invalid link" UI immediately for expired or missing tokens without waiting for form submission. Form POSTs to `/auth/do-set-password`.
 - **`Shop/Dashboard.razor`** — profile editing (including brands), services CRUD, hours management (per day), photos tab (upload/delete/set cover), reviews viewing. Uses internal `HourRow` class with `string OpenTime`/`CloseTime` (format `"HH:mm"`). `<input type="time">` uses `value`/`@onchange` instead of `@bind` — Blazor infers `DateTime` for time inputs when using `@bind` on string properties. Shows a red disabled banner (with reason) when `Status == Inactive`.
 - **`Admin/Dashboard.razor`** — accessible to both `Admin` and `SuperAdmin` roles (`_isSuperAdmin` flag drives elevated actions). Tabs: Cereri, Servicii, Utilizatori, Recenzii. Shops tab: search, edit modal (`UpdateProfileAsync` + `SetCategoryAsync` for Category field), disable-with-reason modal, activate. Users tab: Activi/Dezactivați toggle, search, edit modal (FullName + email via `UserManager`), reset-password modal (generates `/auth/set-password` link), lock/unlock (no reason), soft-disable-with-reason modal, restore. Role enforcement: SuperAdmin rows have no actions; Admin rows only actionable by SuperAdmin; `Admin` option in role dropdown only shown to SuperAdmin. Reject panel toggled via `_rejectingId`.
 

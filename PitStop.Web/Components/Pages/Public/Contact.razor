@@ -1,6 +1,8 @@
 @page "/contact"
 @rendermode InteractiveServer
 @inject IShopRequestRepository ShopRequestRepo
+@inject IEmailService EmailSvc
+@inject IConfiguration Config
 
 <PageTitle>Contact - PitStop</PageTitle>
 <HeadContent>
@@ -220,6 +222,29 @@
                 County = string.Empty,
                 Phone = string.Empty,
             });
+        }
+        else
+        {
+            var subjectLabel = FormSubject switch
+            {
+                "support"     => "Suport tehnic",
+                "review"      => "Problemă cu o recenzie",
+                "partnership" => "Parteneriat",
+                _             => "Altele",
+            };
+            var adminEmail = Config["Email:From"] ?? "contact@pitstop.ro";
+            var html = $"""
+                <p><strong>Mesaj nou prin formularul de contact PitStop</strong></p>
+                <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px;">
+                  <tr><td style="padding:4px 12px 4px 0;color:#888;">Subiect</td><td><strong>{subjectLabel}</strong></td></tr>
+                  <tr><td style="padding:4px 12px 4px 0;color:#888;">Nume</td><td>{FormName}</td></tr>
+                  <tr><td style="padding:4px 12px 4px 0;color:#888;">Email</td><td><a href="mailto:{FormEmail}">{FormEmail}</a></td></tr>
+                </table>
+                <p style="margin-top:16px;"><strong>Mesaj:</strong></p>
+                <blockquote style="border-left:3px solid #C0392B;margin:0;padding:8px 16px;color:#333;">{FormMessage}</blockquote>
+                """;
+            try { await EmailSvc.SendAsync(adminEmail, $"[PitStop Contact] {subjectLabel} — {FormName}", html); }
+            catch { /* swallow — email failure should not block form submission */ }
         }
 
         SubmitSuccess = true;
