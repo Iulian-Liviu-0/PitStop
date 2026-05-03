@@ -211,6 +211,14 @@ public class ShopRepository(IDbContextFactory<AppDbContext> factory, ILogger<Sho
         logger.LogInformation("Shop status changed: id={ShopId} status={Status}", shopId, status);
     }
 
+    public async Task SetCategoryAsync(int shopId, ShopCategory category)
+    {
+        await using var ctx = await factory.CreateDbContextAsync();
+        await ctx.Shops.Where(s => s.Id == shopId).ExecuteUpdateAsync(s => s
+            .SetProperty(p => p.Category, category)
+            .SetProperty(p => p.UpdatedAt, DateTime.UtcNow));
+    }
+
     public async Task<(int ShopCount, int CountyCount, double AvgRating, int ReviewCount)> GetSiteStatsAsync()
     {
         await using var ctx = await factory.CreateDbContextAsync();

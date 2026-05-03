@@ -528,6 +528,16 @@
                     <label class="block text-xs font-semibold text-text-muted mb-1">Website</label>
                     <input @bind="_esWebsite" class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red" />
                 </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-text-muted mb-1">Categorie</label>
+                    <select value="@_esCategory" @onchange="e => _esCategory = Enum.Parse<ShopCategory>(e.Value?.ToString() ?? nameof(ShopCategory.Altele))"
+                            class="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red bg-white">
+                        @foreach (var cat in Enum.GetValues<ShopCategory>())
+                        {
+                            <option value="@cat">@CategoryLabel(cat)</option>
+                        }
+                    </select>
+                </div>
             </div>
             @if (_esError is { Length: > 0 })
             {
@@ -696,6 +706,7 @@
     private Shop? _editingShop;
     private string _esName = "", _esDescription = "", _esAddress = "", _esCity = "",
                    _esCounty = "", _esPhone = "", _esEmail = "", _esWebsite = "";
+    private ShopCategory _esCategory;
     private bool _esSaving;
     private string _esError = "";
 
@@ -860,6 +871,7 @@
         _esPhone        = shop.Phone;
         _esEmail        = shop.Email;
         _esWebsite      = shop.Website ?? "";
+        _esCategory     = shop.Category;
         _esError        = "";
     }
 
@@ -874,6 +886,8 @@
                 _esCity, _esCounty, _esPhone, _esEmail,
                 string.IsNullOrWhiteSpace(_esWebsite) ? null : _esWebsite,
                 _editingShop.Sector);
+            if (_esCategory != _editingShop.Category)
+                await ShopRepo.SetCategoryAsync(_editingShop.Id, _esCategory);
             _editingShop.Name        = _esName;
             _editingShop.Description = _esDescription;
             _editingShop.Address     = _esAddress;
@@ -882,6 +896,7 @@
             _editingShop.Phone       = _esPhone;
             _editingShop.Email       = _esEmail;
             _editingShop.Website     = string.IsNullOrWhiteSpace(_esWebsite) ? null : _esWebsite;
+            _editingShop.Category    = _esCategory;
             _editingShop = null;
         }
         catch { _esError = "A apărut o eroare. Încearcă din nou."; }
